@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>광고 증빙 요청 시스템 제어센터</title>
+    <link rel="stylesheet" href="./control.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div class="hero__brand">
+          <img src="../assets/app-icon.svg" alt="" class="hero__icon" />
+          <div>
+            <p class="hero__eyebrow">Broadcast Delivery Console</p>
+            <h1>광고 증빙 요청 시스템 제어센터</h1>
+            <p class="hero__summary">서버 상태, 접속 주소, 최근 로그를 한 화면에서 확인하고 제어합니다.</p>
+          </div>
+        </div>
+        <div class="hero__actions">
+          <button id="startButton" class="button button--primary">서버 시작</button>
+          <button id="stopButton" class="button button--secondary">서버 중지</button>
+          <button id="openServiceButton" class="button button--secondary">서비스 열기</button>
+          <button id="openLogsButton" class="button button--ghost">전체 로그 열기</button>
+          <button id="quitButton" class="button button--danger">서버 중지 후 종료</button>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel panel--status">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Server Status</p>
+              <h2>운영 상태</h2>
+            </div>
+            <div id="statusBadge" class="status-badge status-badge--stopped">정지</div>
+          </div>
+          <p id="statusDescription" class="status-copy">서버가 실행 중이 아닙니다. [서버 시작]을 눌러 서비스를 열어주세요.</p>
+          <div id="errorBanner" class="error-banner hidden"></div>
+          <dl class="meta-list">
+            <div>
+              <dt>운영 방식</dt>
+              <dd id="ownershipValue">제어 앱 관리</dd>
+            </div>
+            <div>
+              <dt>PID</dt>
+              <dd id="pidValue">-</dd>
+            </div>
+            <div>
+              <dt>공용 접속 주소</dt>
+              <dd id="publicUrlValue">-</dd>
+            </div>
+            <div>
+              <dt>서비스 PC 주소</dt>
+              <dd id="localUrlValue">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Runtime Paths</p>
+              <h2>공용 런타임 저장소</h2>
+            </div>
+          </div>
+          <dl class="path-list">
+            <div>
+              <dt>APP_SUPPORT_DIR</dt>
+              <dd id="appSupportValue">-</dd>
+            </div>
+            <div>
+              <dt>DB</dt>
+              <dd id="dbPathValue">-</dd>
+            </div>
+            <div>
+              <dt>전달 파일</dt>
+              <dd id="deliveryPathValue">-</dd>
+            </div>
+            <div>
+              <dt>로그</dt>
+              <dd id="logsPathValue">-</dd>
+            </div>
+            <div>
+              <dt>PID 파일</dt>
+              <dd id="pidFileValue">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel panel--logs">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Recent Logs</p>
+              <h2>최근 로그</h2>
+            </div>
+            <p id="logFilePath" class="panel__caption">로그 파일을 확인 중입니다.</p>
+          </div>
+          <pre id="logOutput" class="log-output">로그를 불러오는 중...</pre>
+        </section>
+      </main>
+    </div>
+
+    <script src="./control.js"></script>
+  </body>
+  </html>

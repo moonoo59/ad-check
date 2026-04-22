@@ -1,0 +1,14 @@
+packages:
+  - backend
+  - frontend
+
+# 네이티브 빌드가 필요한 패키지 허용 목록
+# better-sqlite3: SQLite 드라이버 (C++ 바인딩 필요)
+# esbuild: tsx 런타임에서 사용하는 번들러
+# electron: Electron 바이너리 다운로드 (postinstall 훅 필요)
+# @electron/rebuild: 네이티브 모듈 Electron 버전 재빌드
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+  - electron
+  - "@electron/rebuild"

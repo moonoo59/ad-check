@@ -1,0 +1,19 @@
+{
+  "name": "ad-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "광고 증빙 요청 자동화 시스템",
+  "scripts": {
+    "dev": "pnpm --parallel --filter=backend --filter=frontend dev",
+    "dev:backend": "pnpm --filter=backend dev",
+    "dev:frontend": "pnpm --filter=frontend dev",
+    "build": "pnpm --filter=backend build && pnpm --filter=frontend build",
+    "lint": "pnpm --recursive lint",
+
+    "create-app": "bash scripts/create-app.sh"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}

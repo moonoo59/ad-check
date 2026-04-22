@@ -1,0 +1,24 @@
+{
+  "name": "ad-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "광고 증빙 요청 자동화 시스템",
+  "scripts": {
+    "dev": "pnpm --filter=frontend build && FRONTEND_DIST_PATH=frontend/dist pnpm --filter=backend dev",
+    "dev:vite": "pnpm --parallel --filter=backend --filter=frontend dev",
+    "dev:backend": "pnpm --filter=backend dev",
+    "dev:frontend": "pnpm --filter=frontend dev",
+    "build": "pnpm --filter=backend build && pnpm --filter=frontend build && pnpm --filter=electron build",
+    "lint": "pnpm --recursive lint",
+    "verify:static": "pnpm lint && pnpm build",
+    "create-app": "bash scripts/create-app.sh"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "sharp": "^0.34.5"
+  }
+}

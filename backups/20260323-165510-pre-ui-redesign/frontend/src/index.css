@@ -1,0 +1,29 @@
+/*
+ * 전역 기본 스타일
+ *
+ * Tailwind CSS v4 + 업무용 내부 도구에 맞는 깔끔하고 읽기 쉬운 스타일.
+ * 색상 체계: green(성공/완료), red(오류/실패), yellow(경고/주의), gray(중립/대기), blue(진행 중)
+ */
+
+@import "tailwindcss";
+
+:root {
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  color: #1f2937;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

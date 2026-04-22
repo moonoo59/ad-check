@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>광고 증빙 요청 자동화 시스템 — 포트폴리오</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* 한글 폰트 */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    body { font-family: 'Noto Sans KR', system-ui, sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+    /* 코드 블록 스크롤 */
+    pre { overflow-x: auto; }
+
+    /* 아코디언 애니메이션 */
+    .accordion-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+    .accordion-body.open {
+      max-height: 9999px;
+    }
+
+    /* Mermaid 다이어그램 중앙 정렬 */
+    .mermaid { text-align: center; }
+
+    /* 인쇄 대응 */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .bg-slate-900, .bg-slate-800, .bg-slate-700 {
+        background: white !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .text-white, .text-slate-300, .text-slate-400 { color: #1e293b !important; }
+      .accordion-body { max-height: none !important; }
+      section { page-break-inside: avoid; }
+    }
+
+    /* 스크롤 부드럽게 */
+    html { scroll-behavior: smooth; }
+
+    /* 배지 공통 */
+    .tech-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ============================================================
+     NAVIGATION (no-print)
+     ============================================================ -->
+<nav class="no-print sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 flex items-center justify-between h-12">
+    <span class="font-semibold text-slate-700 text-sm">Ad-Check Portfolio</span>
+    <div class="hidden md:flex gap-5 text-xs text-slate-500 font-medium">
+      <a href="#hero"       class="hover:text-indigo-600 transition-colors">개요</a>
+      <a href="#problem"    class="hover:text-indigo-600 transition-colors">문제 해결</a>
+      <a href="#metrics"    class="hover:text-indigo-600 transition-colors">성과</a>
+      <a href="#stack"      class="hover:text-indigo-600 transition-colors">기술 스택</a>
+      <a href="#arch"       class="hover:text-indigo-600 transition-colors">아키텍처</a>
+      <a href="#features"   class="hover:text-indigo-600 transition-colors">핵심 기능</a>
+      <a href="#highlights" class="hover:text-indigo-600 transition-colors">기술 하이라이트</a>
+      <a href="#retro"      class="hover:text-indigo-600 transition-colors">회고</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     1. HERO
+     ============================================================ -->
+<section id="hero" class="bg-slate-900 text-white py-20 px-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="inline-block bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 text-xs font-medium px-3 py-1 rounded-full mb-6">
+      국내 방송사 내부 업무 도구 · 단독 개발
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold leading-tight mb-4">
+      방송 광고 증빙 요청<br class="hidden md:block" /> 자동화 시스템
+    </h1>
+    <p class="text-slate-300 text-lg mb-8 max-w-2xl leading-relaxed">
+      이메일·엑셀 기반의 수작업 광고 증빙 프로세스를 웹 애플리케이션으로 대체한 사내 업무 자동화 도구.
+      파일 탐색, 검수, 복사, 감사 로그까지 전 흐름을 단일 시스템 안에 통합했습니다.
+    </p>
+
+    <!-- 메타 정보 그리드 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div class="bg-slate-800 rounded-lg p-4">
+        <div class="text-xs text-slate-400 mb-1">기간</div>
+        <div class="font-semibold text-sm">2026.02 – 2026.04</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-4">
+        <div class="text-xs text-slate-400 mb-1">역할</div>
+        <div class="font-semibold text-sm">Full-Stack 단독 개발</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-4">
+        <div class="text-xs text-slate-400 mb-1">배포 형태</div>
+        <div class="font-semibold text-sm">Electron macOS 앱</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-4">
+        <div class="text-xs text-slate-400 mb-1">운영 환경</div>
+        <div class="font-semibold text-sm">사내망 단일 PC</div>
+      </div>
+    </div>
+
+    <!-- 핵심 기술 스택 요약 배지 -->
+    <div class="flex flex-wrap gap-2">
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">TypeScript</span>
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">Node.js / Express</span>
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">React</span>
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">SQLite</span>
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">Electron</span>
+      <span class="bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-full">Vite</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     2. 문제 & 해결
+     ============================================================ -->
+<section id="problem" class="py-16 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">문제와 해결</h2>
+    <p class="text-slate-500 text-sm mb-10">Before / After 비교로 본 프로젝트의 존재 이유</p>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Before -->
+      <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="font-semibold text-red-700">Before — 수작업 프로세스</span>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-700">
+          <li class="flex gap-2">
+            <span class="text-red-400 mt-0.5">&#x25B6;</span>
+            요청자(채널 담당자)가 이메일로 채널·방송일시·광고주를 담당자에게 요청
+          </li>
+          <li class="flex gap-2">
+            <span class="text-red-400 mt-0.5">&#x25B6;</span>
+            담당자(대표 담당자)가 Logger Storage(NAS)를 직접 탐색하며 파일을 수동 식별
+          </li>
+          <li class="flex gap-2">
+            <span class="text-red-400 mt-0.5">&#x25B6;</span>
+            자정 넘김·날짜 오산으로 인한 오파일 전달 사고
+          </li>
+          <li class="flex gap-2">
+            <span class="text-red-400 mt-0.5">&#x25B6;</span>
+            요청 내역·처리 결과 추적 불가 (엑셀 수기 관리)
+          </li>
+          <li class="flex gap-2">
+            <span class="text-red-400 mt-0.5">&#x25B6;</span>
+            NAS 마운트 장애 시 복사 작업 전체 중단
+          </li>
+        </ul>
+      </div>
+
+      <!-- After -->
+      <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="font-semibold text-green-700">After — 웹 자동화 시스템</span>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-700">
+          <li class="flex gap-2">
+            <span class="text-green-500 mt-0.5">&#x25B6;</span>
+            요청자(채널 담당자)가 웹에서 직접 요청 등록 → 실시간 상태 조회
+          </li>
+          <li class="flex gap-2">
+            <span class="text-green-500 mt-0.5">&#x25B6;</span>
+            파일명 매칭 알고리즘이 자동으로 후보 파일 탐색 및 점수 산출
+          </li>
+          <li class="flex gap-2">
+            <span class="text-green-500 mt-0.5">&#x25B6;</span>
+            자정 넘김·KST/UTC 처리를 코드 레벨에서 완전 정규화
+          </li>
+          <li class="flex gap-2">
+            <span class="text-green-500 mt-0.5">&#x25B6;</span>
+            모든 요청·승인·복사 이력을 감사 로그로 영구 보관
+          </li>
+          <li class="flex gap-2">
+            <span class="text-green-500 mt-0.5">&#x25B6;</span>
+            NAS 의존 제거 → 로컬 스토리지 복사 + 웹 다운로드 제공
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     3. 핵심 성과 지표
+     ============================================================ -->
+<section id="metrics" class="bg-slate-900 text-white py-16 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold mb-2">핵심 성과 지표</h2>
+    <p class="text-slate-400 text-sm mb-10">약 3개월 간 단독 개발한 시스템의 규모</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <!-- 카드 6개 -->
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">~7,000</div>
+        <div class="text-slate-300 text-sm font-medium">백엔드 LOC</div>
+        <div class="text-slate-500 text-xs mt-1">31개 파일 / Express + TypeScript</div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">~9,500</div>
+        <div class="text-slate-300 text-sm font-medium">프론트엔드 LOC</div>
+        <div class="text-slate-500 text-xs mt-1">51개 파일 / React + TypeScript</div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">13</div>
+        <div class="text-slate-300 text-sm font-medium">DB 마이그레이션</div>
+        <div class="text-slate-500 text-xs mt-1">SQLite / 자동 순차 적용</div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">9</div>
+        <div class="text-slate-300 text-sm font-medium">백엔드 도메인 모듈</div>
+        <div class="text-slate-500 text-xs mt-1">auth / requests / files / copy …</div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">13</div>
+        <div class="text-slate-300 text-sm font-medium">프론트엔드 페이지</div>
+        <div class="text-slate-500 text-xs mt-1">권한별 라우팅 보호 적용</div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+        <div class="text-indigo-400 text-3xl font-bold mb-1">3</div>
+        <div class="text-slate-300 text-sm font-medium">권한 역할</div>
+        <div class="text-slate-500 text-xs mt-1">요청자 / 담당자 / 관리자</div>
+      </div>
+    </div>
+
+    <!-- Edge case 요약 -->
+    <div class="mt-6 bg-slate-800 rounded-xl p-5 border border-slate-700">
+      <div class="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-3">처리한 핵심 Edge Case</div>
+      <div class="flex flex-wrap gap-2">
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">자정 넘김 파일명 매칭</span>
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">KST / UTC 정규화</span>
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">Path Traversal 방어</span>
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">IP / 계정 Rate Limit</span>
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">NAS 의존성 제거</span>
+        <span class="bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs px-3 py-1 rounded-full">FK 정합성 마이그레이션</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     4. 기술 스택
+     ============================================================ -->
+<section id="stack" class="py-16 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">기술 스택</h2>
+    <p class="text-slate-500 text-sm mb-10">선택 근거와 함께 분류별로 정리</p>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Backend -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+          </svg>
+          <span class="font-semibold text-slate-700 text-sm">Backend</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">Node.js</span>
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">Express</span>
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">TypeScript</span>
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">SQLite (better-sqlite3)</span>
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">express-session</span>
+          <span class="tech-badge border-blue-200 bg-blue-50 text-blue-700">pnpm</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-4 leading-relaxed">
+          사내망 단일 PC 환경에서 외부 DB 서버 없이 운영 가능한 SQLite 선택.
+          Express는 미들웨어 체계가 간결하여 소규모 API 서버에 최적.
+        </p>
+      </div>
+
+      <!-- Frontend -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span class="font-semibold text-slate-700 text-sm">Frontend</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">React 18</span>
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">TypeScript</span>
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">Vite</span>
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">React Router v6</span>
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">Tailwind CSS</span>
+          <span class="tech-badge border-cyan-200 bg-cyan-50 text-cyan-700">Axios</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-4 leading-relaxed">
+          Vite로 빌드 속도 확보, Tailwind로 디자인 시스템 없이도 일관된 UI 구현.
+          React Router의 Outlet/RequireAuth 패턴으로 권한별 라우팅 분리.
+        </p>
+      </div>
+
+      <!-- Infra / Packaging -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <span class="font-semibold text-slate-700 text-sm">Packaging / Infra</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="tech-badge border-purple-200 bg-purple-50 text-purple-700">Electron</span>
+          <span class="tech-badge border-purple-200 bg-purple-50 text-purple-700">electron-builder</span>
+          <span class="tech-badge border-purple-200 bg-purple-50 text-purple-700">SMB (macOS Finder)</span>
+          <span class="tech-badge border-purple-200 bg-purple-50 text-purple-700">macOS Keychain</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-4 leading-relaxed">
+          Electron으로 Node 런타임·백엔드·프론트엔드를 단일 .app 번들로 패키징.
+          SMB 자격증명은 macOS Keychain에만 저장, 코드에 일절 미포함.
+        </p>
+      </div>
+
+      <!-- 개발 도구 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span class="font-semibold text-slate-700 text-sm">개발 도구</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="tech-badge border-slate-200 bg-slate-50 text-slate-600">ESLint</span>
+          <span class="tech-badge border-slate-200 bg-slate-50 text-slate-600">pnpm workspaces</span>
+          <span class="tech-badge border-slate-200 bg-slate-50 text-slate-600">concurrently</span>
+          <span class="tech-badge border-slate-200 bg-slate-50 text-slate-600">ts-node-dev</span>
+          <span class="tech-badge border-slate-200 bg-slate-50 text-slate-600">Claude Code</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-4 leading-relaxed">
+          모노레포 구조로 백엔드·프론트엔드·Electron을 단일 pnpm workspace로 관리.
+          <code class="bg-slate-100 px-1 rounded">pnpm dev</code>로 백엔드(4000)·프론트(5173) 동시 기동.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     5. 시스템 아키텍처
+     ============================================================ -->
+<section id="arch" class="bg-slate-50 py-16 px-4 border-t border-slate-200">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">시스템 아키텍처</h2>
+    <p class="text-slate-500 text-sm mb-10">레이어 구조와 데이터 흐름</p>
+
+    <!-- Mermaid 다이어그램 -->
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-8 overflow-x-auto">
+      <div class="mermaid">
+flowchart TB
+  subgraph Client["사용자 (브라우저)"]
+    direction LR
+    AD["요청자<br/>(채널 담당자)"]
+    TECH["담당자<br/>(대표 담당자)"]
+    ADMIN["관리자"]
+  end
+
+  subgraph Electron["macOS Electron App"]
+    direction TB
+    subgraph FE["Frontend — React + Vite"]
+      Router["React Router<br/>RequireAuth / RequireAdmin"]
+      Pages["13개 페이지<br/>요청목록 / 요청상세 / 통계 …"]
+    end
+
+    subgraph BE["Backend — Express + TypeScript"]
+      direction TB
+      MW["미들웨어<br/>session · auth · requestId · 에러핸들러"]
+      Modules["도메인 모듈<br/>auth / requests / files / copy<br/>users / audit / stats / channels / health"]
+      Common["공통 유틸<br/>datetime · path-guards · rate-limit · logger · response"]
+    end
+
+    subgraph Data["데이터 레이어"]
+      DB["SQLite DB<br/>adcheck.db<br/>13개 마이그레이션"]
+      Local["로컬 전달 스토리지<br/>LOCAL_DELIVERY_PATH<br/>1일 TTL 자동 정리"]
+    end
+  end
+
+  subgraph Ext["외부 스토리지"]
+    LS["Logger Storage<br/>사내 파일 서버 (SMB)<br/>채널별 녹화 원본 .avi"]
+  end
+
+  AD & TECH & ADMIN -->|"HTTP (내부망)"| Router
+  Router --> Pages
+  Pages -->|"axios / REST API"| MW
+  MW --> Modules
+  Modules --> Common
+  Modules --> DB
+  Modules -->|"파일 탐색"| LS
+  Modules -->|"파일 복사"| Local
+  Local -->|"웹 다운로드<br/>/api/download"| AD
+      </div>
+    </div>
+
+    <!-- 모노레포 구조 -->
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div class="text-slate-700 font-semibold text-sm mb-3">모노레포 디렉토리 구조</div>
+      <pre class="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-4">ad-check/
+├── backend/          # Express + TypeScript + SQLite
+│   └── src/
+│       ├── config/   # env, database, migrations (001~013)
+│       ├── common/   # auth.middleware, datetime, path-guards, rate-limit, logger
+│       └── modules/  # auth, channels, requests, files, copy, users, audit, stats, health
+├── frontend/         # React + TypeScript + Vite
+│   └── src/
+│       ├── contexts/ # AuthContext (전역 인증 상태)
+│       ├── components/
+│       ├── pages/    # 13개 페이지
+│       └── lib/      # api.ts, apiService.ts
+├── electron/         # macOS 앱 패키징
+└── scripts/          # DB 백업, 앱 생성 스크립트</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     6. 핵심 기능
+     ============================================================ -->
+<section id="features" class="py-16 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">핵심 기능</h2>
+    <p class="text-slate-500 text-sm mb-10">기능별 역할과 기술 포인트</p>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <!-- 카드 1: 요청 등록 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">요청 등록</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          채널·방송일시·요청 시간대·모니터링 송출 시각을 입력하면 요청이 생성되고,
+          백엔드가 즉시 Logger Storage 파일 탐색을 트리거합니다.
+          다수 광고를 한 요청 안에 복수 항목으로 묶어 일괄 처리 가능.
+        </p>
+      </div>
+
+      <!-- 카드 2: 파일 탐색 & 검수 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">파일 탐색 & 검수</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          매칭 알고리즘이 파일별 점수(0~100)를 산출하고 match_reason을 한글로 설명.
+          담당자는 후보 목록에서 파일을 선택한 뒤 승인 또는 반려.
+          자정 넘김 시 다음날 디렉토리까지 자동 탐색.
+        </p>
+      </div>
+
+      <!-- 카드 3: 파일 복사 & 다운로드 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">파일 복사 & 다운로드</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          승인 후 Logger Storage → 서버 로컬 스토리지로 복사 진행.
+          완료 파일은 웹 다운로드 API로 직접 제공.
+          1일 경과 파일은 스케줄러가 자동 정리 (1시간 간격).
+        </p>
+      </div>
+
+      <!-- 카드 4: 감사 로그 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">감사 로그</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          요청 생성·승인·반려·복사·삭제 등 모든 상태 변화를 audit_logs 테이블에 기록.
+          관리자 화면에서 날짜·사용자·액션 기준으로 검색 및 조회 가능.
+        </p>
+      </div>
+
+      <!-- 카드 5: 통계 & 내보내기 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">통계 & CSV 내보내기</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          기간·채널·상태별 요청 현황 집계 대시보드.
+          요청 목록 전체를 CSV(Excel 호환) 형식으로 내보내기.
+          KST 기준 날짜 필터 정확도 보장.
+        </p>
+      </div>
+
+      <!-- 카드 6: 사용자 & 채널 관리 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-800 mb-1">사용자 & 채널 관리</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          관리자가 사용자 계정·역할을 직접 관리.
+          채널 표시명 ↔ Logger Storage 폴더명 매핑을 UI에서 편집 가능.
+          채널 매핑 변경 이력도 별도 테이블로 보존.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     7. 기술적 하이라이트 (아코디언)
+     ============================================================ -->
+<section id="highlights" class="bg-slate-50 py-16 px-4 border-t border-slate-200">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">기술적 하이라이트</h2>
+    <p class="text-slate-500 text-sm mb-10">설계 의사결정과 트러블슈팅 기록</p>
+
+    <div class="space-y-3">
+
+      <!-- ─── 아코디언 1: 파일명 매칭 알고리즘 ─── -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <button class="accordion-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors" onclick="toggleAccordion(this)">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">1</span>
+            <span class="font-semibold text-slate-800">파일명 매칭 알고리즘 — 자정 넘김 Edge Case</span>
+          </div>
+          <svg class="accordion-icon w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <div class="px-6 pb-6 border-t border-slate-100 pt-5">
+
+            <!-- 문제 / 원인 / 해결 -->
+            <div class="grid md:grid-cols-3 gap-4 mb-5">
+              <div class="bg-red-50 border border-red-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-red-600 mb-1">문제</div>
+                <p class="text-xs text-slate-600">
+                  파일명 <code class="bg-slate-100 px-1 rounded">CH_20260305_235955_0100.avi</code>에서
+                  종료 시각(01:00)이 시작 시각(23:59)보다 작아 파일 범위가 음수로 계산됨.
+                </p>
+              </div>
+              <div class="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-amber-600 mb-1">원인</div>
+                <p class="text-xs text-slate-600">
+                  파일명의 마지막 HHMM은 <em>종료 시각</em>이지 길이가 아님.
+                  단순 문자열 비교만으로는 자정 경계를 인식할 수 없음.
+                </p>
+              </div>
+              <div class="bg-green-50 border border-green-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-green-600 mb-1">해결</div>
+                <p class="text-xs text-slate-600">
+                  <code class="bg-slate-100 px-1 rounded">endH &lt; startH</code> 조건 감지 시
+                  종료 날짜에 +1일 보정. 동일 시 분 비교 케이스도 함께 처리.
+                </p>
+              </div>
+            </div>
+
+            <!-- 코드 발췌 -->
+            <div class="text-xs text-slate-500 font-medium mb-2">
+              <code>backend/src/modules/files/file-matcher.ts</code> — parseFileName
+            </div>
+            <pre class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed"><code><span class="text-slate-400">// 종료 DateTime 구성 (처음엔 같은 날짜)</span>
+<span class="text-blue-300">let</span> endTime = <span class="text-blue-300">new</span> <span class="text-yellow-300">Date</span>(year, month, day, endH, endM, <span class="text-orange-300">0</span>);
+
+<span class="text-slate-400">// 자정 넘김 처리:</span>
+<span class="text-slate-400">// - 종료 HH &lt; 시작 HH: 명확한 자정 넘김</span>
+<span class="text-slate-400">// - 종료 HH == 시작 HH &amp;&amp; 종료 MM &lt; 시작 MM: 동일 시 자정 넘김</span>
+<span class="text-green-300">if</span> (
+  endH &lt; startH ||
+  (endH === startH &amp;&amp; endM &lt; startM)
+) {
+  endTime = <span class="text-blue-300">new</span> <span class="text-yellow-300">Date</span>(year, month, day + <span class="text-orange-300">1</span>, endH, endM, <span class="text-orange-300">0</span>);
+}</code></pre>
+
+            <!-- 매칭 점수 기준표 -->
+            <div class="mt-5">
+              <div class="text-xs text-slate-500 font-medium mb-2">매칭 점수 기준 (0~100점)</div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100">
+                      <th class="text-left px-3 py-2 text-slate-600 font-medium border border-slate-200">조건</th>
+                      <th class="text-center px-3 py-2 text-slate-600 font-medium border border-slate-200">점수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-3 py-2 border border-slate-200 text-slate-700">모니터링 송출시간이 파일 범위(start~end) 내 포함</td>
+                      <td class="px-3 py-2 border border-slate-200 text-center font-semibold text-indigo-700">+60</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-3 py-2 border border-slate-200 text-slate-700">요청 시간대와 파일 범위가 겹침 (overlap 있음)</td>
+                      <td class="px-3 py-2 border border-slate-200 text-center font-semibold text-indigo-700">+30</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-3 py-2 border border-slate-200 text-slate-700">겹침 비율이 요청 범위의 50% 이상</td>
+                      <td class="px-3 py-2 border border-slate-200 text-center font-semibold text-indigo-700">+10</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 아코디언 2: NAS → 로컬 스토리지 재설계 ─── -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <button class="accordion-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors" onclick="toggleAccordion(this)">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">2</span>
+            <span class="font-semibold text-slate-800">운영 재설계 — 공유 NAS 의존성 제거</span>
+          </div>
+          <svg class="accordion-icon w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <div class="px-6 pb-6 border-t border-slate-100 pt-5">
+            <div class="grid md:grid-cols-2 gap-5 mb-5">
+
+              <div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">초기 설계</div>
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 space-y-2">
+                  <p>Logger Storage → <strong>공유 NAS 마운트</strong> 경로로 직접 복사</p>
+                  <p class="text-red-500">문제: NAS 마운트 지연·SMB 인증 실패 시 복사 작업 전체 블로킹</p>
+                  <p class="text-red-500">문제: 마운트 상태를 코드가 능동적으로 제어 불가 (macOS 제약)</p>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">재설계 (2026-04-03)</div>
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 space-y-2">
+                  <p>Logger Storage → <strong>서버 로컬 스토리지</strong> (<code>LOCAL_DELIVERY_PATH</code>) 복사</p>
+                  <p>완료 파일은 <code>/api/requests/:id/items/:itemId/download</code> 웹 다운로드로 제공</p>
+                  <p class="text-green-600">효과: NAS 마운트 상태와 완전히 독립 — 복사 성공률 향상</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 트레이드오프 -->
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-slate-600">
+              <div class="font-semibold text-amber-700 mb-2">트레이드오프 및 보완책</div>
+              <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                  <p class="font-medium text-slate-700 mb-1">로컬 디스크 용량 제한</p>
+                  <p>→ 1일 TTL 자동 정리 스케줄러 (<code>delivery-cleanup.service.ts</code>)로 상쇄.</p>
+                  <p>→ 스케줄러는 서버 기동 시 1시간 간격으로 등록.</p>
+                </div>
+                <div>
+                  <p class="font-medium text-slate-700 mb-1">레거시 NAS 코드 잔존</p>
+                  <p>→ <code>SHARED_NAS_MOUNT</code> env·<code>storage-cleanup.router.ts</code>는
+                  하위 호환용으로 코드에 남겨둠. 실제 복사 경로는 전환 완료.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 아코디언 3: 보안 레이어 ─── -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <button class="accordion-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors" onclick="toggleAccordion(this)">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">3</span>
+            <span class="font-semibold text-slate-800">보안 레이어 — Rate Limit / Path Guard / 세션</span>
+          </div>
+          <svg class="accordion-icon w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <div class="px-6 pb-6 border-t border-slate-100 pt-5">
+
+            <div class="grid md:grid-cols-3 gap-4 mb-5">
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <div class="text-xs font-semibold text-indigo-700 mb-1">로그인 Rate Limit</div>
+                <p class="text-xs text-slate-600">
+                  IP / 계정명 / (IP+계정명) 조합 3개 버킷으로 독립 카운팅.
+                  15분 윈도우에서 한도 초과 시 15분 차단.
+                </p>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <div class="text-xs font-semibold text-indigo-700 mb-1">Path Traversal 방어</div>
+                <p class="text-xs text-slate-600">
+                  Logger Storage·로컬 전달 경로에 대한 모든 파일 접근을
+                  <code>path.resolve</code> + prefix 검사로 루트 이탈 차단.
+                </p>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <div class="text-xs font-semibold text-indigo-700 mb-1">세션 기반 인증</div>
+                <p class="text-xs text-slate-600">
+                  express-session + 요청마다 DB 재조회로 권한 최신성 보장.
+                  Electron 설치별 랜덤 세션 시크릿.
+                </p>
+              </div>
+            </div>
+
+            <!-- Rate Limit 코드 -->
+            <div class="text-xs text-slate-500 font-medium mb-2">
+              <code>backend/src/common/login-rate-limit.ts</code> — 3-scope 버킷 설계
+            </div>
+            <pre class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed mb-4"><code><span class="text-slate-400">// 15분 슬라이딩 윈도우 / 한도 초과 시 15분 차단</span>
+<span class="text-blue-300">const</span> LIMITS = {
+  ip: <span class="text-orange-300">20</span>,        <span class="text-slate-400">// 동일 IP 최대 20회</span>
+  username: <span class="text-orange-300">10</span>,  <span class="text-slate-400">// 동일 계정명 최대 10회</span>
+  combo: <span class="text-orange-300">5</span>,      <span class="text-slate-400">// IP+계정명 조합 최대 5회</span>
+} <span class="text-blue-300">as const</span>;
+
+<span class="text-blue-300">const</span> buckets: <span class="text-yellow-300">Record</span>&lt;<span class="text-yellow-300">Scope</span>, <span class="text-yellow-300">Map</span>&lt;<span class="text-yellow-300">string</span>, <span class="text-yellow-300">AttemptBucket</span>&gt;&gt; = {
+  ip: <span class="text-blue-300">new</span> <span class="text-yellow-300">Map</span>(),
+  username: <span class="text-blue-300">new</span> <span class="text-yellow-300">Map</span>(),
+  combo: <span class="text-blue-300">new</span> <span class="text-yellow-300">Map</span>(),
+};</code></pre>
+
+            <!-- Path Guard 코드 -->
+            <div class="text-xs text-slate-500 font-medium mb-2">
+              <code>backend/src/common/path-guards.ts</code> — traversal 차단
+            </div>
+            <pre class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed"><code><span class="text-blue-300">function</span> <span class="text-yellow-300">isWithinRoot</span>(rootPath: <span class="text-yellow-300">string</span>, targetPath: <span class="text-yellow-300">string</span>): <span class="text-yellow-300">boolean</span> {
+  <span class="text-green-300">return</span> targetPath === rootPath
+    || targetPath.<span class="text-yellow-300">startsWith</span>(<span class="text-green-400">`${rootPath}${path.sep}`</span>);
+}
+
+<span class="text-blue-300">export function</span> <span class="text-yellow-300">resolvePathWithinRoot</span>(
+  rootPath: <span class="text-yellow-300">string</span>, targetPath: <span class="text-yellow-300">string</span>, label = <span class="text-green-400">'경로'</span>,
+): <span class="text-yellow-300">string</span> {
+  <span class="text-blue-300">const</span> resolvedRoot   = path.<span class="text-yellow-300">resolve</span>(rootPath);
+  <span class="text-blue-300">const</span> resolvedTarget = path.<span class="text-yellow-300">resolve</span>(targetPath);
+  <span class="text-green-300">if</span> (!<span class="text-yellow-300">isWithinRoot</span>(resolvedRoot, resolvedTarget)) {
+    <span class="text-green-300">throw new</span> <span class="text-yellow-300">Error</span>(<span class="text-green-400">`${label}가 허용된 루트 경로를 벗어났습니다.`</span>);
+  }
+  <span class="text-green-300">return</span> resolvedTarget;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 아코디언 4: KST/UTC 정규화 마이그레이션 ─── -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <button class="accordion-toggle w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors" onclick="toggleAccordion(this)">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">4</span>
+            <span class="font-semibold text-slate-800">KST / UTC 혼재 — 타임존 정규화 마이그레이션</span>
+          </div>
+          <svg class="accordion-icon w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div class="accordion-body">
+          <div class="px-6 pb-6 border-t border-slate-100 pt-5">
+
+            <div class="grid md:grid-cols-3 gap-4 mb-5">
+              <div class="bg-red-50 border border-red-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-red-600 mb-1">문제</div>
+                <p class="text-xs text-slate-600">
+                  날짜 필터 적용 시 KST 00:00 이후 요청이 전날로 분류되는 현상.
+                  최대 9시간 오차.
+                </p>
+              </div>
+              <div class="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-amber-600 mb-1">원인</div>
+                <p class="text-xs text-slate-600">
+                  초기 스키마 기본값 <code>datetime('now', 'localtime')</code>과
+                  이후 <code>new Date().toISOString()</code>(UTC) 혼재.
+                </p>
+              </div>
+              <div class="bg-green-50 border border-green-100 rounded-lg p-3">
+                <div class="text-xs font-semibold text-green-600 mb-1">해결</div>
+                <p class="text-xs text-slate-600">
+                  Migration 010으로 기존 KST 문자열을 일괄 UTC ISO 변환.
+                  이후 <code>common/datetime.ts</code>로 KST 경계값 변환 일원화.
+                </p>
+              </div>
+            </div>
+
+            <!-- SQL 발췌 -->
+            <div class="text-xs text-slate-500 font-medium mb-2">
+              <code>backend/src/config/migrations/010_normalize_timestamps_to_utc.sql</code> — KST → UTC 변환 패턴
+            </div>
+            <pre class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed"><code><span class="text-slate-400">-- 'T'가 없는 값 = KST 로컬 문자열 → UTC로 변환 (-9시간)</span>
+<span class="text-green-300">UPDATE</span> users
+<span class="text-green-300">SET</span>
+  created_at = <span class="text-green-300">CASE</span>
+    <span class="text-green-300">WHEN</span> created_at <span class="text-green-300">IS NOT NULL AND</span> instr(created_at, <span class="text-orange-300">'T'</span>) = <span class="text-orange-300">0</span>
+      <span class="text-green-300">THEN</span> strftime(<span class="text-orange-300">'%Y-%m-%dT%H:%M:%fZ'</span>, datetime(created_at, <span class="text-orange-300">'-9 hours'</span>))
+    <span class="text-green-300">ELSE</span> created_at
+  <span class="text-green-300">END</span>,
+  <span class="text-slate-400">-- updated_at, reviewed_at 등 동일 패턴 반복</span>
+  ...;
+
+<span class="text-slate-400">-- 이후 신규 스키마 기본값은 UTC 강제:</span>
+<span class="text-blue-300">created_at</span> TEXT NOT NULL DEFAULT (strftime(<span class="text-orange-300">'%Y-%m-%dT%H:%M:%fZ'</span>, <span class="text-orange-300">'now'</span>))</code></pre>
+
+            <div class="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600">
+              <strong class="text-slate-800">이후 원칙:</strong> 날짜 필터·화면 표시 구현 시
+              직접 <code>new Date()</code> 비교 금지. 반드시 <code>common/datetime.ts</code>의
+              <code>toKSTDateString()</code> 유틸로 KST 경계값 변환 후 쿼리.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     8. 스크린샷 (Placeholder)
+     ============================================================ -->
+<section id="screenshots" class="py-16 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">화면 스크린샷</h2>
+    <p class="text-slate-500 text-sm mb-10">실제 운영 화면 (스크린샷 삽입 예정)</p>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl aspect-video flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span>요청 목록 화면</span>
+      </div>
+      <div class="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl aspect-video flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span>요청 상세 / 파일 검수 화면</span>
+      </div>
+      <div class="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl aspect-video flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span>요청 등록 화면</span>
+      </div>
+    </div>
+
+    <p class="text-xs text-slate-400 mt-4 text-center">
+      스크린샷은 <code>portfolio/screenshots/</code> 에 이미지 파일 추가 후 이 섹션을 업데이트하세요.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     9. 회고 & 학습
+     ============================================================ -->
+<section id="retro" class="bg-slate-900 text-white py-16 px-4">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-2xl font-bold mb-2">회고 & 학습</h2>
+    <p class="text-slate-400 text-sm mb-10">이 프로젝트를 통해 얻은 것과 다음 단계</p>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+      <!-- 배운 점 -->
+      <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div class="text-indigo-400 font-semibold mb-4">배운 점</div>
+        <ul class="space-y-3 text-sm text-slate-300">
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">도메인 지식이 설계를 결정한다.</strong>
+            "종료 시각 = 길이가 아님"을 놓쳤으면 매칭 알고리즘 전체가 무너졌을 것.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">외부 의존성은 격리해야 한다.</strong>
+            NAS 마운트를 복사 경로에서 분리한 순간 장애 영향 범위가 극적으로 줄었다.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">타임존은 처음부터 UTC로 통일해야 한다.</strong>
+            KST 혼재로 인한 마이그레이션 비용이 예상보다 훨씬 컸다.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">순수 함수로 분리하면 검증이 쉬워진다.</strong>
+            <code>file-matcher.ts</code>를 DB/파일시스템 없이 단독 테스트 가능하도록 설계한 것이 주효했다.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 다음 단계 -->
+      <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div class="text-indigo-400 font-semibold mb-4">다음 단계 (예정)</div>
+        <ul class="space-y-3 text-sm text-slate-300">
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">광고 구간 자동 컷팅.</strong>
+            <code>system_settings</code> 테이블 기반 feature flag 도입 후,
+            선택 파일에서 광고 구간만 추출하는 clip extraction 기능 착수.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">마운트 제어 UI.</strong>
+            Logger Storage SMB 마운트 상태를 웹에서 확인·제어할 수 있는 관리 화면 추가.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">단위 테스트 도입.</strong>
+            <code>file-matcher.ts</code>의 순수 함수 설계를 활용해 매칭 알고리즘 자동화 테스트 추가.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-400 mt-0.5 shrink-0">&#x25B6;</span>
+            <span><strong class="text-white">사용자 자가 가입.</strong>
+            관리자 수동 계정 생성 대신, 초대 코드 기반 자가 가입 플로우 구현.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     10. 연락처 / 링크
+     ============================================================ -->
+<section id="contact" class="py-16 px-4">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">연락처</h2>
+    <p class="text-slate-500 text-sm mb-8">궁금하신 점은 편하게 연락해 주세요.</p>
+
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="mailto:ddeokpal0074@gmail.com"
+         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        이메일 보내기
+      </a>
+      <a href="https://github.com/"
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<footer class="bg-slate-900 text-slate-500 text-xs py-6 px-4 text-center">
+  <p>광고 증빙 요청 자동화 시스템 — 포트폴리오 페이지</p>
+  <p class="mt-1">회사명·IP·채널명 등 민감 정보는 익명 처리되었습니다.</p>
+</footer>
+
+<!-- ============================================================
+     JavaScript
+     ============================================================ -->
+<script>
+  // Mermaid 초기화
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral',
+    themeVariables: {
+      primaryColor: '#6366f1',
+      primaryTextColor: '#1e293b',
+      primaryBorderColor: '#e2e8f0',
+      lineColor: '#94a3b8',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc',
+    },
+    flowchart: { curve: 'basis' },
+  });
+
+  // 아코디언 토글
+  function toggleAccordion(btn) {
+    const body = btn.nextElementSibling;
+    const icon = btn.querySelector('.accordion-icon');
+    const isOpen = body.classList.contains('open');
+
+    // 모두 닫기
+    document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('.accordion-icon').forEach(i => i.style.transform = '');
+
+    if (!isOpen) {
+      body.classList.add('open');
+      icon.style.transform = 'rotate(180deg)';
+    }
+  }
+</script>
+
+</body>
+</html>
