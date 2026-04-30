@@ -23,8 +23,6 @@ import type {
   UpdateRequestItemBody,
   UpdateChannelBody,
   CreateChannelBody,
-  CreateUserBody,
-  UpdateUserBody,
   AuditLog,
   AuditLogQuery,
   StatsSummary,
@@ -33,18 +31,10 @@ import type {
   StatsByChannel,
   StatsByAdvertiser,
   StatsBySalesManager,
-  Registration,
-  RegisterBody,
   HealthInfo,
 } from '../types';
 
 // ─── Auth API ────────────────────────────────────────────────────────────────
-
-/** POST /api/auth/register — 회원가입 신청 (공개 엔드포인트, 비인증) */
-export async function register(body: RegisterBody): Promise<{ registration_id: number }> {
-  const res = await api.post<{ success: boolean; data: { registration_id: number } }>('/auth/register', body);
-  return res.data.data!;
-}
 
 /** POST /api/auth/login */
 export async function login(username: string, password: string): Promise<User> {
@@ -127,6 +117,12 @@ export async function getRequests(query: RequestListQuery = {}): Promise<Request
   };
 }
 
+/** GET /api/requests/advertisers (중복 없는 광고주 목록 조회) */
+export async function getAdvertisers(): Promise<string[]> {
+  const res = await api.get<{ success: boolean; data: { advertisers: string[] } }>('/requests/advertisers');
+  return res.data.data?.advertisers ?? [];
+}
+
 /** GET /api/requests/:id */
 export async function getRequestDetail(id: number): Promise<RequestDetail> {
   // 백엔드는 { request: {...}, items: [...] } 구조 — request 필드를 펼쳐서 RequestDetail로 정규화
@@ -196,80 +192,18 @@ export async function selectFile(itemId: number, body: SelectFileBody): Promise<
   return res.data.data!;
 }
 
-// ─── Registrations API (tech_team + admin) ───────────────────────────────────
-
-/** GET /api/registrations?status=pending|approved|rejected */
-export async function getRegistrations(status?: string): Promise<Registration[]> {
-  const res = await api.get<{ success: boolean; data: { registrations: Registration[]; total: number } }>(
-    '/registrations',
-    { params: status ? { status } : undefined },
-  );
-  return res.data.data?.registrations ?? [];
-}
-
-/** GET /api/registrations/pending-count — GlobalNav 뱃지용 */
-export async function getRegistrationPendingCount(): Promise<number> {
-  const res = await api.get<{ success: boolean; data: { count: number } }>('/registrations/pending-count');
-  return res.data.data?.count ?? 0;
-}
-
-/** POST /api/registrations/:id/approve */
-export async function approveRegistration(id: number): Promise<{ user_id: number }> {
-  const res = await api.post<{ success: boolean; data: { user_id: number } }>(`/registrations/${id}/approve`);
-  return res.data.data!;
-}
-
-/** POST /api/registrations/:id/reject */
-export async function rejectRegistration(id: number, reason: string): Promise<void> {
-  await api.post(`/registrations/${id}/reject`, { reason });
-}
-
-// ─── Users API (admin 전용) ────────────────────────────────────────────────────
-
-/** GET /api/users */
-export async function getUsers(includeInactive = false): Promise<User[]> {
-  const res = await api.get<{ success: boolean; data: { users: User[]; total: number } }>('/users', {
-    params: includeInactive ? { include_inactive: 'true' } : undefined,
-  });
-  return res.data.data?.users ?? [];
-}
-
-/** GET /api/users/:id */
-export async function getUserById(id: number): Promise<User> {
-  const res = await api.get<{ success: boolean; data: User }>(`/users/${id}`);
-  return res.data.data!;
-}
-
-/** POST /api/users */
-export async function createUser(body: CreateUserBody): Promise<User> {
-  const res = await api.post<{ success: boolean; data: User }>('/users', body);
-  return res.data.data!;
-}
-
-/** PATCH /api/users/:id */
-export async function updateUser(id: number, body: UpdateUserBody): Promise<User> {
-  const res = await api.patch<{ success: boolean; data: User }>(`/users/${id}`, body);
-  return res.data.data!;
-}
-
-/** POST /api/users/:id/reset-password */
-export async function resetUserPassword(id: number, new_password: string): Promise<void> {
-  await api.post(`/users/${id}/reset-password`, { new_password });
-}
-
 /** POST /api/auth/change-password — 본인 비밀번호 변경 (로그인 상태) */
 export async function changePassword(current_password: string, new_password: string, new_password_confirm: string): Promise<void> {
   await api.post('/auth/change-password', { current_password, new_password, new_password_confirm });
 }
 
-/** POST /api/auth/reset-password — 비밀번호 자가 초기화 (로그인 없이, 연락처로 본인 확인) */
-export async function selfResetPassword(
+/** POST /api/auth/reset-password-direct — 공용 계정 비밀번호 무인증 초기화 */
+export async function directResetPassword(
   username: string,
-  contact: string,
   new_password: string,
   new_password_confirm: string,
 ): Promise<void> {
-  await api.post('/auth/reset-password', { username, contact, new_password, new_password_confirm });
+  await api.post('/auth/reset-password-direct', { username, new_password, new_password_confirm });
 }
 
 // ─── Audit API (admin 전용) ────────────────────────────────────────────────────
@@ -403,10 +337,6 @@ export async function exportRequestsCsv(params: {
   URL.revokeObjectURL(url);
 }
 
-/**
- * GET /api/stats/export-csv — CSV 파일 다운로드
- * blob 응답으로 받아 브라우저에서 파일 다운로드 트리거
- */
 export async function exportStatsCsv(from: string, to: string): Promise<void> {
   const res = await api.get('/stats/export-csv', {
     params: { from, to },
@@ -420,4 +350,32 @@ export async function exportStatsCsv(from: string, to: string): Promise<void> {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ─── System Settings API ───────────────────────────────────────────────────────
+
+export interface SystemSetting {
+  id: number;
+  setting_key: string;
+  setting_value: string;
+  value_type: string;
+  description: string;
+  updated_by: number | null;
+  updated_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getSystemSettings(): Promise<SystemSetting[]> {
+  const res = await api.get<{ success: boolean; data: { items: SystemSetting[] } }>('/system-settings');
+  return res.data.data?.items ?? [];
+}
+
+export async function updateSystemSetting(key: string, value: string): Promise<void> {
+  await api.patch(`/system-settings/${encodeURIComponent(key)}`, { setting_value: value });
+}
+
+export async function getPublicSystemSettings(): Promise<Pick<SystemSetting, 'setting_key' | 'setting_value' | 'value_type'>[]> {
+  const res = await api.get<{ success: boolean; data: { items: Pick<SystemSetting, 'setting_key' | 'setting_value' | 'value_type'>[] } }>('/system-settings/public');
+  return res.data.data?.items ?? [];
 }

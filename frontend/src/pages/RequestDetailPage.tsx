@@ -14,7 +14,6 @@ import { FileSearch } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   approveRequest,
-  deleteCopiedFile,
   deleteRequest,
   downloadRequestItemFile,
   getChannels,
@@ -100,7 +99,6 @@ export default function RequestDetailPage() {
   const [resendModalOpen, setResendModalOpen] = useState(false);
   const [resendReason, setResendReason] = useState('');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteCopiedFileConfirmOpen, setDeleteCopiedFileConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<CorrectionFormState>({
@@ -131,14 +129,10 @@ export default function RequestDetailPage() {
   }, [loadDetail]);
 
   useEffect(() => {
-    if (!user?.can_copy) {
-      return;
-    }
-
     getChannels(false).then(setChannels).catch(() => {
       showToast('채널 목록을 불러오지 못했습니다.', 'error');
     });
-  }, [showToast, user?.can_copy]);
+  }, [showToast]);
 
   useEffect(() => {
     if (!detail) {
@@ -192,7 +186,7 @@ export default function RequestDetailPage() {
 
   const items: ItemWithResults[] = detail.items ?? [];
   const selectedItem = items[selectedItemIdx] ?? items[0];
-  const canAct = !!user?.can_copy;
+  const canAct = true;
   const isRejected = detail.status === 'rejected';
   const isCopyFailed = detail.status === 'failed' && items.some((item) => item.copy_job !== null);
   const isSearchFailed = detail.status === 'failed' && !isCopyFailed;
@@ -212,8 +206,7 @@ export default function RequestDetailPage() {
       item.item_status !== 'searching' &&
       item.file_search_results.some((file) => file.is_selected === 1 && file.match_score === 100),
     );
-  const selectedItemHasActiveCopy =
-    selectedItem?.copy_job?.status === 'done' && !selectedItem.copy_job?.deleted_at;
+
   const selectedItemCorrectionBusy = items.some((item) =>
     item.id !== selectedItem?.id && (item.item_status === 'searching' || item.item_status === 'copying'),
   );
@@ -237,6 +230,9 @@ export default function RequestDetailPage() {
       : []),
     ...(isRejected && detail.reject_reason
       ? [{ label: '반려 사유', value: <span className="text-red-600">{detail.reject_reason}</span>, span: true }]
+      : []),
+    ...(detail.resend_count > 0
+      ? [{ label: '재전송 횟수', value: `${detail.resend_count}회` }]
       : []),
   ];
 
@@ -349,7 +345,7 @@ export default function RequestDetailPage() {
     setIsProcessing(true);
     try {
       await resendRequest(detail.id, resendReason.trim());
-      showToast('재전송 요청이 등록되었습니다. 관리자/기술팀이 복사를 실행해야 합니다.', 'success');
+      showToast('재전송 요청이 등록되었습니다. 관리자 또는 광고팀이 복사를 실행해야 합니다.', 'success');
       setResendReason('');
       await loadDetail();
     } catch {
@@ -392,31 +388,7 @@ export default function RequestDetailPage() {
     }
   };
 
-  const handleDeleteCopiedFile = async () => {
-    if (!selectedItem?.copy_job?.id || !selectedItemHasActiveCopy) {
-      return;
-    }
-    setDeleteCopiedFileConfirmOpen(true);
-  };
 
-  const handleDeleteCopiedFileConfirm = async () => {
-    if (!selectedItem?.copy_job?.id || !selectedItemHasActiveCopy) {
-      setDeleteCopiedFileConfirmOpen(false);
-      return;
-    }
-
-    setDeleteCopiedFileConfirmOpen(false);
-    setIsProcessing(true);
-    try {
-      await deleteCopiedFile(selectedItem.copy_job.id);
-      showToast('공유 NAS 복사본을 삭제했습니다.', 'success');
-      await loadDetail();
-    } catch {
-      showToast('파일 삭제에 실패했습니다.', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const startCorrection = () => {
     if (!selectedItem) {
@@ -554,6 +526,15 @@ export default function RequestDetailPage() {
         </div>
       )}
 
+      {isSearchFailed && (
+        <div className="mb-3 rounded-[22px] border border-red-200 bg-[rgba(255,245,245,0.96)] px-4 py-3 text-sm text-red-900">
+          <div className="font-medium">파일 탐색 실패</div>
+          <div className="mt-1 text-xs text-red-800">
+            파일을 찾지 못했거나 스토리지 연결에 문제가 발생했습니다. 관리자에게 문의하거나 수동 탐색을 진행해주세요.
+          </div>
+        </div>
+      )}
+
       {detail.status === 'searching' && (
         <div className="mb-3 flex items-center gap-2 rounded-[22px] border border-amber-200 bg-[rgba(255,248,236,0.96)] px-4 py-3 text-sm text-amber-900">
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-500" />
@@ -615,16 +596,7 @@ export default function RequestDetailPage() {
                       </button>
                     )
                   )}
-                  {selectedItemHasActiveCopy && (
-                    <button
-                      type="button"
-                      onClick={handleDeleteCopiedFile}
-                      disabled={isProcessing}
-                      className="app-btn app-btn--danger app-btn--sm"
-                    >
-                      파일 삭제
-                    </button>
-                  )}
+
                 </div>
               )}
             </div>
@@ -909,7 +881,6 @@ export default function RequestDetailPage() {
         approveConfirmOpen={approveConfirmOpen}
         retryConfirmOpen={retryConfirmOpen}
         retryCopyConfirmOpen={retryCopyConfirmOpen}
-        deleteCopiedFileConfirmOpen={deleteCopiedFileConfirmOpen}
         deleteConfirmOpen={deleteConfirmOpen}
         rejectModalOpen={rejectModalOpen}
         rejectReason={rejectReason}
@@ -921,8 +892,6 @@ export default function RequestDetailPage() {
         onRetryConfirm={handleRetryConfirm}
         onRetryCopyCancel={() => setRetryCopyConfirmOpen(false)}
         onRetryCopyConfirm={handleRetryCopyConfirm}
-        onDeleteCopiedFileCancel={() => setDeleteCopiedFileConfirmOpen(false)}
-        onDeleteCopiedFileConfirm={handleDeleteCopiedFileConfirm}
         onDeleteCancel={() => setDeleteConfirmOpen(false)}
         onDeleteConfirm={handleDeleteConfirm}
         onRejectOpenChange={setRejectModalOpen}

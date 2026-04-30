@@ -149,52 +149,49 @@ function assertForeignKeyIntegrity(): void {
   throw new Error(`외래키 무결성 검사 실패 (${violations.length}건). 서버를 기동할 수 없습니다.`);
 }
 
-// ============================================================
-// 기본 사용자 시딩
-//
-// 최초 실행 시 users 테이블이 비어 있으면 기본 계정 3개를 생성한다.
-// - admin / adcheck2026 / role: admin
-// - tech1 / adcheck2026 / role: tech_team
-// - ad1   / adcheck2026 / role: ad_team
-//
-// 주의: password_hash 컬럼은 migration 003에서 추가된 이후에만 사용 가능하다.
-//       runMigrations() 실행 후 호출해야 한다.
-// ============================================================
-async function seedDefaultUsers(): Promise<void> {
-  // 이미 사용자가 존재하면 시딩 건너뜀
-  const count = (db.prepare('SELECT COUNT(*) as cnt FROM users').get() as { cnt: number }).cnt;
-  if (count > 0) {
-    return;
-  }
-
-  console.log('[DB] 기본 사용자 시딩 시작...');
-
-  const defaultUsers = [
-    { username: 'admin',  display_name: '관리자', role: 'admin',     password: 'adcheck2026' },
-    { username: 'tech1',  display_name: '기술팀1', role: 'tech_team', password: 'adcheck2026' },
-    { username: 'ad1',    display_name: '광고팀1', role: 'ad_team',   password: 'adcheck2026' },
-  ];
-
+async function enforceSharedAccounts(): Promise<void> {
+  console.log('[DB] 공용 계정 체제 확인 중...');
   const now = utcNow();
-  const insert = db.prepare(`
-    INSERT INTO users (username, display_name, role, password_hash, is_active, created_at, updated_at)
-    VALUES (@username, @display_name, @role, @password_hash, 1, @now, @now)
-  `);
 
-  for (const user of defaultUsers) {
-    // bcrypt 해시 생성 (rounds=10)
-    const password_hash = await bcrypt.hash(user.password, 10);
-    insert.run({
-      username: user.username,
-      display_name: user.display_name,
-      role: user.role,
-      password_hash,
-      now,
-    });
-    console.log(`[DB] 기본 사용자 생성: ${user.username} (${user.role})`);
+  // 1. admin 계정 확인 및 생성
+  let admin = db.prepare("SELECT id FROM users WHERE username = 'admin'").get() as { id: number } | undefined;
+  if (!admin) {
+    const password_hash = await bcrypt.hash('admin123!', 10);
+    const result = db.prepare(`
+      INSERT INTO users (username, display_name, role, password_hash, is_active, created_at, updated_at)
+      VALUES ('admin', '서버 관리자', 'admin', ?, 1, ?, ?)
+    `).run(password_hash, now, now);
+    admin = { id: Number(result.lastInsertRowid) };
+  } else {
+    db.prepare("UPDATE users SET display_name = '서버 관리자', role = 'admin' WHERE id = ?").run(admin.id);
   }
 
-  console.log('[DB] 기본 사용자 시딩 완료. 초기 비밀번호: adcheck2026');
+  // 2. ad_team 계정 확인 및 생성
+  let adTeam = db.prepare("SELECT id FROM users WHERE username = 'ad_team'").get() as { id: number } | undefined;
+  if (!adTeam) {
+    const password_hash = await bcrypt.hash('adteam123!', 10);
+    const result = db.prepare(`
+      INSERT INTO users (username, display_name, role, password_hash, is_active, created_at, updated_at)
+      VALUES ('ad_team', '광고팀', 'ad_team', ?, 1, ?, ?)
+    `).run(password_hash, now, now);
+    adTeam = { id: Number(result.lastInsertRowid) };
+  } else {
+    db.prepare("UPDATE users SET display_name = '광고팀', role = 'ad_team' WHERE id = ?").run(adTeam.id);
+  }
+
+  // 3. 기존 외래키 참조 데이터를 ad_team / admin으로 일괄 이관
+  // (운영 DB에 다른 사용자가 잔존하는 경우를 대비)
+  db.prepare("UPDATE requests SET requester_id = ?").run(adTeam.id);
+  db.prepare("UPDATE requests SET reviewed_by = ? WHERE reviewed_by IS NOT NULL").run(admin.id);
+  db.prepare("UPDATE copy_jobs SET approved_by = ? WHERE approved_by IS NOT NULL").run(admin.id);
+  db.prepare("UPDATE channel_mapping_histories SET changed_by = ? WHERE changed_by IS NOT NULL").run(admin.id);
+  db.prepare("UPDATE mount_logs SET triggered_user_id = ? WHERE triggered_user_id IS NOT NULL").run(admin.id);
+  db.prepare("UPDATE audit_logs SET user_id = ? WHERE user_id IS NOT NULL AND user_id != ?").run(admin.id, admin.id);
+
+  // 4. 두 공용 계정 외 나머지 삭제
+  db.prepare("DELETE FROM users WHERE id != ? AND id != ?").run(admin.id, adTeam.id);
+
+  console.log('[DB] 공용 계정 확인 완료. (서버 관리자, 광고팀 두 계정만 유지)');
 }
 
 function seedDefaultChannelMappings(): void {
@@ -233,9 +230,9 @@ runMigrations();
 assertForeignKeyIntegrity();
 seedDefaultChannelMappings();
 
-// 기본 사용자 시딩 (비동기 - 서버 기동과 병렬로 실행되어도 무관)
-seedDefaultUsers().catch((err) => {
-  console.error('[DB] 기본 사용자 시딩 실패:', err);
+// 공용 계정 강제 적용 (비동기)
+enforceSharedAccounts().catch((err) => {
+  console.error('[DB] 공용 계정 체제 전환 실패:', err);
 });
 
 export default db;

@@ -10,16 +10,11 @@ declare module 'express-session' {
   interface SessionData {
     // 로그인한 사용자 ID (users.id)
     userId: number;
-    // 로그인한 사용자 역할 (ad_team / tech_team / admin)
+    // 로그인한 사용자 역할 (ad_team / admin)
     userRole: string;
     // 로그인한 사용자 표시명
     displayName: string;
-    // 로그인한 사용자 계정명
+    // 로그인한 사용자 계정명 (내부 식별자: 'admin' 또는 'ad_team')
     username: string;
-    // 로그인한 사용자 담당 채널 JSON 배열 문자열
-    assignedChannels: string;
-    // 기능별 권한 (매 요청마다 DB에서 갱신)
-    canCopy: number;       // 파일 탐색/선택/승인/복사 권한
-    canViewStats: number;  // 통계 대시보드 조회 권한
   }
 }

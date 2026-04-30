@@ -17,13 +17,13 @@
 import { Router, Request, Response, IRouter } from 'express';
 import db from '../../config/database';
 import { sendSuccess } from '../../common/response';
-import { requireAuth, requirePermission } from '../../common/auth.middleware';
+import { requireAuth } from '../../common/auth.middleware';
 import { getKstNowParts, kstDateEndToUtc, kstDateStartToUtc } from '../../common/datetime';
 
 const router: IRouter = Router();
 
-// 통계 API는 can_view_stats 권한 필요 (admin은 항상 통과)
-router.use(requireAuth, requirePermission('canViewStats'));
+// 통계 API는 로그인 사용자 모두 접근 가능
+router.use(requireAuth);
 
 /**
  * KST 기준 날짜 문자열(YYYY-MM-DD)을 UTC ISO 문자열로 변환하는 헬퍼

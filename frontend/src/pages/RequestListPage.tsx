@@ -3,7 +3,7 @@
  *
  * - 상태 필터(멀티 선택) + 기간 + 요청자 필터
  * - 필터 상태는 URL 쿼리 파라미터로 관리 (새로고침/뒤로가기 유지)
- * - ad_team은 요청자 필터 고정(본인만)
+ * - Excel 내보내기: admin만 표시
  * - 행 클릭 시 요청 상세(화면 3)로 이동
  * - 페이지당 20건, 기본 최신 내림차순
  */
@@ -12,8 +12,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { List } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { exportRequestsCsv, getRequests, getUsers } from '../lib/apiService';
-import type { Request, RequestStatus, User } from '../types';
+import { exportRequestsCsv, getRequests } from '../lib/apiService';
+import type { Request, RequestStatus } from '../types';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import EmptyState from '../components/EmptyState';
@@ -77,21 +77,11 @@ export default function RequestListPage() {
 
   // 정렬 상태
   const [sort, setSort] = useState(searchParams.get('sort') ?? 'created_at_desc');
-  // 요청자 필터 (tech_team/admin만 사용 가능; ad_team은 서버에서 자동 본인 고정)
-  const [requesterId, setRequesterId] = useState<string>(searchParams.get('requester_id') ?? '');
-  // admin/tech_team만 요청자 목록 로드
-  const [userList, setUserList] = useState<User[]>([]);
 
   const [requests, setRequests] = useState<Request[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // admin/tech_team은 요청자 목록을 한 번만 로드 (필터 드롭다운용)
-  useEffect(() => {
-    if (user?.role === 'ad_team') return;   // ad_team은 본인 고정, 목록 불필요
-    getUsers().catch(() => []).then(setUserList);
-  }, [user?.role]);
 
   // 데이터 로드
   const loadRequests = useCallback(async () => {
@@ -109,8 +99,6 @@ export default function RequestListPage() {
         from: fromDate || undefined,
         to: toDate || undefined,
         sort,
-        requester_id: requesterId ? Number(requesterId) : undefined,
-        // ad_team은 서버에서 자동으로 본인만 필터링
       });
       setRequests(res.items ?? []);
       setTotal(res.total ?? 0);
@@ -119,7 +107,7 @@ export default function RequestListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStatuses, fromDate, toDate, page, sort, requesterId]);
+  }, [selectedStatuses, fromDate, toDate, page, sort]);
 
   useEffect(() => {
     loadRequests();
@@ -134,9 +122,8 @@ export default function RequestListPage() {
     if (fromDate) params.from = fromDate;
     if (toDate) params.to = toDate;
     if (sort !== 'created_at_desc') params.sort = sort;
-    if (requesterId) params.requester_id = requesterId;
     setSearchParams(params, { replace: true });
-  }, [selectedStatuses, fromDate, toDate, page, sort, requesterId, setSearchParams]);
+  }, [selectedStatuses, fromDate, toDate, page, sort, setSearchParams]);
 
   // 상태 필터 토글
   const toggleStatus = (value: string) => {
@@ -164,13 +151,12 @@ export default function RequestListPage() {
     setFromDate(defaultRange.from);
     setToDate(defaultRange.to);
     setSort('created_at_desc');
-    setRequesterId('');
     setPage(1);
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT));
 
-  // tech_team/admin: 현재 필터 조건 그대로 CSV 다운로드
+  // admin: 현재 필터 조건 그대로 CSV 다운로드
   const handleExcelDownload = async () => {
     setIsExporting(true);
     try {
@@ -198,8 +184,8 @@ export default function RequestListPage() {
         subtitle="요청 상태, 기간, 요청자를 기준으로 현재 진행 상황을 빠르게 확인할 수 있습니다."
         icon={List}
       >
-        {/* tech_team/admin: Excel 내보내기 버튼 (현재 필터 조건 적용) */}
-        {(user?.role === 'tech_team' || user?.role === 'admin') && (
+        {/* Excel 내보내기 버튼 (현재 필터 조건 적용) */}
+        {user?.role === 'admin' && (
           <button
             type="button"
             onClick={handleExcelDownload}
@@ -258,27 +244,6 @@ export default function RequestListPage() {
               className="app-field app-field--dense text-sm w-[140px]"
             />
           </div>
-
-          {/* 요청자 필터: admin/tech_team만 표시 */}
-          {user?.role !== 'ad_team' && (
-            <div className="flex min-w-0 items-center gap-2 shrink-0">
-              <span className="whitespace-nowrap text-sm font-semibold text-[var(--app-text-soft)]">
-                요청자
-              </span>
-              <select
-                value={requesterId}
-                onChange={(e) => { setRequesterId(e.target.value); setPage(1); }}
-                className="app-select app-select--dense text-sm w-[150px]"
-              >
-                <option value="">전체</option>
-                {userList.map((u) => (
-                  <option key={u.id} value={String(u.id)}>
-                    {u.display_name} ({u.username})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* 정렬 드롭다운 */}
           <div className="flex min-w-0 items-center gap-2 shrink-0">
@@ -345,7 +310,7 @@ export default function RequestListPage() {
                   key={req.id}
                   onClick={() => navigate(`/requests/${req.id}`)}
                   className={`transition-colors ${
-                    // search_done 상태 — 검토 요망 시각 신호 (기술팀 기준)
+                    // search_done 상태 — 검토 요망 시각 신호
                     req.status === 'search_done' && user?.role !== 'ad_team'
                       ? 'border-l-[3px] border-l-amber-400'
                       : ''

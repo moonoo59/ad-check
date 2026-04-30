@@ -3,7 +3,7 @@
  *
  * POST   /api/requests                              - 요청 등록
  * GET    /api/requests                              - 요청 목록 (필터/페이지네이션)
- * GET    /api/requests/export-excel                 - 요청 목록 Excel(CSV) 내보내기 (tech_team/admin)
+ * GET    /api/requests/export-excel                 - 요청 목록 Excel(CSV) 내보내기 (모든 인증 사용자)
  * GET    /api/requests/:id                          - 요청 상세
  * POST   /api/requests/:id/search                  - 파일 탐색 시작 (백그라운드)
  * POST   /api/requests/:id/retry-search            - 탐색 재시도 (기존 결과 초기화)
@@ -33,13 +33,14 @@ import {
   prepareForResend,
   updateRequestItemForCorrection,
   deleteRequest,
+  getUniqueAdvertisers,
   CreateRequestDto,
   UpdateRequestItemDto,
 } from './requests.service';
 import { runFileSearch, runSingleItemFileSearch } from '../files/files.service';
 import { executeCopyJobs } from '../copy/copy.service';
 import { sendSuccess, sendError } from '../../common/response';
-import { requireAuth, requireRole, requirePermission, getCurrentUser } from '../../common/auth.middleware';
+import { requireAuth, requireRole, getCurrentUser } from '../../common/auth.middleware';
 import db from '../../config/database';
 import { getChannelById } from '../channels/channels.service';
 import { resolveDeliveryPath } from '../../common/path-guards';
@@ -47,36 +48,6 @@ import { utcNow, kstDateStartToUtc, kstDateEndToUtc } from '../../common/datetim
 
 const router: IRouter = Router();
 
-function parseAssignedChannels(value: string | undefined): string[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((channel): channel is string => typeof channel === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function validateRequesterChannelAccess(
-  user: ReturnType<typeof getCurrentUser>,
-  channelMappingId: number,
-): true | string {
-  if (user.role !== 'ad_team') return true;
-
-  const assignedChannels = parseAssignedChannels(user.assignedChannels);
-  if (assignedChannels.length === 0) {
-    return '담당 채널이 지정되지 않았습니다. 관리자에게 문의하세요.';
-  }
-
-  const channel = getChannelById(channelMappingId);
-  if (!channel || channel.is_active !== 1 || !assignedChannels.includes(channel.display_name)) {
-    return '담당 채널만 요청 등록할 수 있습니다. 필요한 채널이 없으면 관리자에게 문의하세요.';
-  }
-
-  return true;
-}
 
 /**
  * POST /api/requests
@@ -98,11 +69,6 @@ router.post('/', requireAuth, (req: Request, res: Response): void => {
     const idx = i + 1;
     if (!item.channel_mapping_id || typeof item.channel_mapping_id !== 'number') {
       sendError(res, `항목 ${idx}: 채널을 선택해주세요.`, 400, 'INVALID_INPUT');
-      return;
-    }
-    const channelAccess = validateRequesterChannelAccess(user, item.channel_mapping_id);
-    if (channelAccess !== true) {
-      sendError(res, `항목 ${idx}: ${channelAccess}`, 403, 'CHANNEL_NOT_ASSIGNED');
       return;
     }
     // 영업담당자는 항목별 필수 입력 (migration 006에서 헤더에서 이동)
@@ -183,7 +149,7 @@ router.get('/', requireAuth, (req: Request, res: Response): void => {
     sort: sort || undefined,  // SORT_MAP 화이트리스트로 SQL 인젝션 방지 (서비스에서 처리)
   };
 
-  const { requests, total } = getRequests(filter, user.role, user.id, user.canCopy);
+  const { requests, total } = getRequests(filter, user.role, user.id);
   const totalPages = Math.ceil(total / (filter.limit ?? 20));
 
   sendSuccess(res, {
@@ -201,7 +167,7 @@ router.get('/', requireAuth, (req: Request, res: Response): void => {
  * GET /api/requests/export-excel
  * 요청 목록을 CSV(Excel 호환) 형식으로 내보내기
  *
- * 권한: tech_team, admin
+ * 권한: 모든 인증 사용자
  * 쿼리 파라미터: from (YYYY-MM-DD), to (YYYY-MM-DD), status (콤마 구분)
  *
  * 주의: /:id 앞에 등록해야 'export-excel'이 ID로 오인되지 않는다.
@@ -209,7 +175,6 @@ router.get('/', requireAuth, (req: Request, res: Response): void => {
 router.get(
   '/export-excel',
   requireAuth,
-  requireRole('tech_team', 'admin'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const { from, to, status } = req.query as Record<string, string>;
@@ -319,6 +284,15 @@ router.get(
 );
 
 /**
+ * GET /api/requests/advertisers
+ * 중복 없는 광고주 목록 조회 (연관 검색어용)
+ */
+router.get('/advertisers', requireAuth, (_req: Request, res: Response): void => {
+  const advertisers = getUniqueAdvertisers();
+  sendSuccess(res, { advertisers });
+});
+
+/**
  * GET /api/requests/:id
  * 요청 상세 조회 (항목 + 파일 탐색 결과 + 복사 작업 포함)
  */
@@ -331,7 +305,7 @@ router.get('/:id', requireAuth, (req: Request, res: Response): void => {
     return;
   }
 
-  const detail = getRequestDetail(id, user.role, user.id, user.canCopy);
+  const detail = getRequestDetail(id, user.role, user.id);
   if (!detail) {
     sendError(res, '요청을 찾을 수 없습니다.', 404, 'NOT_FOUND');
     return;
@@ -349,7 +323,6 @@ router.get('/:id', requireAuth, (req: Request, res: Response): void => {
 router.post(
   '/:id/search',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const id = parseInt(req.params.id, 10);
@@ -390,7 +363,6 @@ router.post(
 router.post(
   '/:id/retry-search',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const id = parseInt(req.params.id, 10);
@@ -429,7 +401,6 @@ router.post(
 router.post(
   '/:id/approve',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const id = parseInt(req.params.id, 10);
@@ -470,7 +441,6 @@ router.post(
 router.post(
   '/:id/retry-copy',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const id = parseInt(req.params.id, 10);
@@ -505,7 +475,6 @@ router.post(
 router.post(
   '/:id/reject',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
     const user = getCurrentUser(req);
     const id = parseInt(req.params.id, 10);
@@ -576,7 +545,6 @@ router.delete(
 router.patch(
   '/:id/items/:itemId',
   requireAuth,
-  requirePermission('canCopy'),
   async (req: Request, res: Response): Promise<void> => {
     const user = getCurrentUser(req);
     const requestId = parseInt(req.params.id, 10);
@@ -690,9 +658,7 @@ router.post(
 router.patch(
   '/items/:itemId/select-file',
   requireAuth,
-  requirePermission('canCopy'),
   (req: Request, res: Response): void => {
-    const user = getCurrentUser(req);
     const itemId = parseInt(req.params.itemId, 10);
     const { file_search_result_id } = req.body as { file_search_result_id?: number };
 
@@ -726,7 +692,7 @@ router.patch(
  *
  * 권한:
  *   - ad_team: 본인 요청만 다운로드 가능
- *   - tech_team/admin: 모든 요청 다운로드 가능
+ *   - 관리자: 모든 요청 다운로드 가능
  *
  * 응답:
  *   - 200 + 파일 스트림: 정상
@@ -799,7 +765,7 @@ router.get(
 
     const stat = await fs.stat(filePath).catch(() => null);
     if (!stat || !stat.isFile()) {
-      sendError(res, '파일을 찾을 수 없습니다. 서버에서 파일이 삭제되었을 수 있습니다.', 404, 'FILE_NOT_FOUND');
+      sendError(res, '파일을 찾을 수 없습니다. 1일 보관 기간이 지나 자동 삭제됐을 수 있습니다.', 404, 'FILE_NOT_FOUND');
       return;
     }
 

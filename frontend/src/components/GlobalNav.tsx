@@ -12,11 +12,9 @@
  */
 
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { ChevronDown, Settings, Users, ClipboardList, LogOut, Lock, Power, UserCheck } from 'lucide-react';
+import { ChevronDown, Settings, ClipboardList, LogOut, Lock, Power } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './ToastMessage';
-import { useEffect, useMemo, useState } from 'react';
-import { getRegistrationPendingCount } from '../lib/apiService';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,35 +25,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const ROLE_LABELS: Record<string, string> = {
-  admin:     '시스템 관리자',
-  tech_team: '대표 담당자',
-  ad_team:   '채널 담당자',
+  admin:   '서버 관리자',
+  ad_team: '광고팀',
 };
 
-// 역할별 배지 색상 (CSS 인라인 스타일로 구분)
+// 역할별 배지 색상
 const ROLE_BADGE_CLASSES: Record<string, string> = {
-  admin:     'bg-[rgba(148,77,62,0.12)] text-[var(--app-danger)] border-[rgba(148,77,62,0.2)]',
-  tech_team: 'bg-[rgba(81,116,91,0.12)] text-[var(--app-success)] border-[rgba(81,116,91,0.2)]',
-  ad_team:   'bg-[rgba(120,88,68,0.08)] text-[var(--app-primary)] border-[rgba(120,88,68,0.15)]',
+  admin:   'bg-[rgba(148,77,62,0.12)] text-[var(--app-danger)] border-[rgba(148,77,62,0.2)]',
+  ad_team: 'bg-[rgba(120,88,68,0.08)] text-[var(--app-primary)] border-[rgba(120,88,68,0.15)]',
 };
-
-function parseAssignedChannels(value: string | undefined): string[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((channel): channel is string => typeof channel === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function formatAssignedChannels(channels: string[]): string {
-  if (channels.length === 0) return '미지정';
-  if (channels.length <= 2) return channels.join(', ');
-  return `${channels.slice(0, 2).join(', ')} 외 ${channels.length - 2}개`;
-}
 
 // Electron preload.ts 에서 노출한 API 타입 선언
 // (contextBridge.exposeInMainWorld('electronAPI', { quit, isElectron }))
@@ -76,23 +54,7 @@ export default function GlobalNav() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // 대기 중인 회원가입 신청 건수 (tech_team + admin만 조회)
-  const [pendingCount, setPendingCount] = useState(0);
 
-  useEffect(() => {
-    // tech_team, admin만 뱃지 조회
-    if (user?.role !== 'tech_team' && user?.role !== 'admin') return;
-
-    const fetchCount = () => {
-      getRegistrationPendingCount()
-        .then(setPendingCount)
-        .catch(() => {/* 뱃지 조회 실패는 무시 */});
-    };
-    fetchCount();
-    // 1분마다 갱신 (신청이 들어왔을 때 인지할 수 있도록)
-    const timer = setInterval(fetchCount, 60_000);
-    return () => clearInterval(timer);
-  }, [user?.role]);
 
   const handleLogout = async () => {
     await logout();
@@ -105,10 +67,6 @@ export default function GlobalNav() {
     `app-nav-link ${isActive ? 'app-nav-link--active' : ''}`;
 
   const roleBadgeClass = ROLE_BADGE_CLASSES[user?.role ?? ''] ?? ROLE_BADGE_CLASSES['ad_team'];
-  const assignedChannels = useMemo(
-    () => parseAssignedChannels(user?.assigned_channels),
-    [user?.assigned_channels],
-  );
 
   return (
     <header className="app-nav-shell">
@@ -134,26 +92,12 @@ export default function GlobalNav() {
             매뉴얼
           </NavLink>
 
-          {/* 통계 대시보드 — can_view_stats 권한이 있는 사용자에게 표시 */}
-          {!!user?.can_view_stats && (
-            <NavLink to="/stats" className={navClass}>
-              통계
-            </NavLink>
-          )}
+          {/* 통계 대시보드 — 모든 로그인 사용자 */}
+          <NavLink to="/stats" className={navClass}>
+            통계
+          </NavLink>
 
-          {/* 신청 승인 — tech_team에게는 단독 링크로 표시 */}
-          {user?.role === 'tech_team' && (
-            <NavLink to="/registrations" className={navClass}>
-              <span className="flex items-center gap-1">
-                신청 승인
-                {pendingCount > 0 && (
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--app-danger)] text-white text-[10px] font-bold leading-none">
-                    {pendingCount > 9 ? '9+' : pendingCount}
-                  </span>
-                )}
-              </span>
-            </NavLink>
-          )}
+
 
           {/* 관리자 메뉴 드롭다운 — admin만 표시, Radix DropdownMenu 사용 */}
           {user?.role === 'admin' && (
@@ -164,11 +108,7 @@ export default function GlobalNav() {
                   className="app-nav-link data-[state=open]:app-nav-link--active inline-flex items-center gap-1"
                 >
                   관리자 메뉴
-                  {pendingCount > 0 && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--app-danger)] text-white text-[10px] font-bold leading-none">
-                      {pendingCount > 9 ? '9+' : pendingCount}
-                    </span>
-                  )}
+
                   <ChevronDown
                     size={13}
                     className="opacity-60 transition-transform duration-150 [[data-state=open]_&]:rotate-180"
@@ -180,34 +120,11 @@ export default function GlobalNav() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <NavLink
-                    to="/registrations"
-                    className="flex items-center gap-2 cursor-default"
-                  >
-                    <UserCheck size={14} />
-                    신청 승인
-                    {pendingCount > 0 && (
-                      <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[var(--app-danger)] text-white text-[10px] font-bold px-1">
-                        {pendingCount > 99 ? '99+' : pendingCount}
-                      </span>
-                    )}
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <NavLink
                     to="/admin/channels"
                     className="flex items-center gap-2 cursor-default"
                   >
                     <Settings size={14} />
                     채널 매핑 관리
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <NavLink
-                    to="/admin/users"
-                    className="flex items-center gap-2 cursor-default"
-                  >
-                    <Users size={14} />
-                    사용자 관리
                   </NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -233,9 +150,6 @@ export default function GlobalNav() {
                 <div className="text-sm font-semibold text-[var(--app-text)]">{user.display_name}</div>
                 <div className="text-[11px] text-[var(--app-text-faint)]">
                   {ROLE_LABELS[user.role] ?? user.role}
-                  {user.role === 'ad_team' && (
-                    <span className="ml-1">· 담당 채널: {formatAssignedChannels(assignedChannels)}</span>
-                  )}
                 </div>
               </div>
               {/* 역할 배지 — 역할별 색상 구분 */}

@@ -1,16 +1,17 @@
 /**
  * 인증 라우터
  *
- * POST /api/auth/login     - 로그인 (세션 생성)
- * POST /api/auth/logout    - 로그아웃 (세션 파괴)
- * GET  /api/auth/me        - 현재 로그인한 사용자 정보
- * POST /api/auth/register  - 회원가입 신청 (공개 엔드포인트)
+ * POST /api/auth/login                - 로그인 (세션 생성)
+ * POST /api/auth/logout               - 로그아웃 (세션 파괴)
+ * GET  /api/auth/me                   - 현재 로그인한 사용자 정보
+ * POST /api/auth/reset-password-direct - 공용 계정 비밀번호 무인증 초기화
+ * POST /api/auth/change-password       - 본인 비밀번호 변경
  *
  * 인증 방식: express-session (서버 사이드 세션, MemoryStore)
  * 단일 PC 내부망 환경에서는 MemoryStore로 충분하다.
  */
 import { Router, Request, Response, IRouter } from 'express';
-import { login, changePassword, selfResetPassword } from './auth.service';
+import { login, changePassword, directResetPassword } from './auth.service';
 import { sendSuccess, sendError } from '../../common/response';
 import { requireAuth, getCurrentUser } from '../../common/auth.middleware';
 import db from '../../config/database';
@@ -20,38 +21,7 @@ import {
   clearLoginRateLimit,
   recordLoginFailure,
 } from '../../common/login-rate-limit';
-import { createRegistration } from '../registrations/registrations.service';
 
-// 회원가입 신청 IP 기반 횟수 제한 (로그인 rate-limiter와 별도 관리)
-// 동일 IP에서 10분 내 5회 초과 시 차단
-const REGISTER_WINDOW_MS = 10 * 60 * 1000;
-const REGISTER_MAX_PER_IP = 5;
-const REGISTER_BLOCK_MS = 10 * 60 * 1000;
-const registerAttempts = new Map<string, { timestamps: number[]; blockedUntil: number }>();
-
-function checkRegisterRateLimit(ip: string): { allowed: boolean; retryAfterSec: number } {
-  const now = Date.now();
-  const key = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
-  const bucket = registerAttempts.get(key) ?? { timestamps: [], blockedUntil: 0 };
-
-  // 만료된 항목 정리
-  bucket.timestamps = bucket.timestamps.filter((ts) => now - ts <= REGISTER_WINDOW_MS);
-  if (bucket.blockedUntil <= now) bucket.blockedUntil = 0;
-
-  if (bucket.blockedUntil > now) {
-    return { allowed: false, retryAfterSec: Math.ceil((bucket.blockedUntil - now) / 1000) };
-  }
-
-  bucket.timestamps.push(now);
-  if (bucket.timestamps.length > REGISTER_MAX_PER_IP) {
-    bucket.blockedUntil = now + REGISTER_BLOCK_MS;
-    registerAttempts.set(key, bucket);
-    return { allowed: false, retryAfterSec: Math.ceil(REGISTER_BLOCK_MS / 1000) };
-  }
-
-  registerAttempts.set(key, bucket);
-  return { allowed: true, retryAfterSec: 0 };
-}
 
 const router: IRouter = Router();
 
@@ -102,9 +72,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     req.session.userRole = user.role;
     req.session.displayName = user.display_name;
     req.session.username = user.username;
-    req.session.canCopy = user.can_copy;
-    req.session.canViewStats = user.can_view_stats;
-    req.session.assignedChannels = user.assigned_channels;
 
     req.session.save((saveError) => {
       if (saveError) {
@@ -125,9 +92,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
           username: user.username,
           display_name: user.display_name,
           role: user.role,
-          can_copy: user.can_copy,
-          can_view_stats: user.can_view_stats,
-          assigned_channels: user.assigned_channels,
         },
         '로그인 성공',
       );
@@ -174,91 +138,18 @@ router.get('/me', requireAuth, (req: Request, res: Response): void => {
     username: user.username,
     display_name: user.displayName,
     role: user.role,
-    can_copy: req.session.canCopy ?? 0,
-    can_view_stats: req.session.canViewStats ?? 0,
-    assigned_channels: user.assignedChannels ?? '[]',
   });
 });
 
 /**
- * POST /api/auth/register
- * 회원가입 신청 (공개 엔드포인트 — 인증 불필요)
- * body: { username, display_name, role, password, assigned_channels? }
+ * POST /api/auth/reset-password-direct
+ * 공용 계정 비밀번호 무인증 초기화
+ * body: { username, new_password, new_password_confirm }
  *
- * 신청 후 관리자 승인이 필요하며, 승인 전까지 로그인 불가.
- * 공개 신청 가능한 역할은 ad_team, tech_team 뿐이다.
- * IP 기반 신청 횟수 제한 적용 (10분 내 5회 초과 시 10분 차단).
- */
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const clientIp = req.ip ?? '';
-  const rateLimit = checkRegisterRateLimit(clientIp);
-  if (!rateLimit.allowed) {
-    res.setHeader('Retry-After', String(rateLimit.retryAfterSec));
-    sendError(res, '신청 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.', 429, 'REGISTER_RATE_LIMITED');
-    return;
-  }
-
-  const body = req.body as {
-    username?: string;
-    display_name?: string;
-    role?: string;
-    password?: string;
-    assigned_channels?: unknown;
-    phone?: string;
-    email?: string;
-  };
-
-  // 입력값 검증
-  if (!body.username || typeof body.username !== 'string' || body.username.trim() === '') {
-    sendError(res, '아이디를 입력해주세요.', 400, 'INVALID_INPUT');
-    return;
-  }
-  if (!body.display_name || typeof body.display_name !== 'string' || body.display_name.trim() === '') {
-    sendError(res, '이름을 입력해주세요.', 400, 'INVALID_INPUT');
-    return;
-  }
-  if (!body.role || !['tech_team', 'ad_team'].includes(body.role)) {
-    sendError(res, '회원가입 신청은 채널 담당자 또는 대표 담당자만 가능합니다.', 400, 'INVALID_INPUT');
-    return;
-  }
-  if (!body.password || typeof body.password !== 'string' || body.password.length < 6) {
-    sendError(res, '비밀번호는 6자 이상이어야 합니다.', 400, 'INVALID_INPUT');
-    return;
-  }
-
-  // assigned_channels: 배열이 아니면 빈 배열로 처리
-  const assignedChannels: string[] = Array.isArray(body.assigned_channels)
-    ? (body.assigned_channels as unknown[]).filter((c): c is string => typeof c === 'string')
-    : [];
-
-  const result = await createRegistration({
-    username: body.username,
-    display_name: body.display_name,
-    role: body.role as 'tech_team' | 'ad_team',
-    password: body.password,
-    assigned_channels: assignedChannels,
-    phone: typeof body.phone === 'string' ? body.phone.trim() || null : null,
-    email: typeof body.email === 'string' ? body.email.trim() || null : null,
-  });
-
-  if (result === 'duplicate_username') {
-    sendError(res, '이미 사용 중인 아이디입니다.', 409, 'DUPLICATE_USERNAME');
-    return;
-  }
-
-  sendSuccess(res, { registration_id: result }, '회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.', 201);
-});
-
-/**
- * POST /api/auth/reset-password
- * 비밀번호 자가 초기화 (공개 엔드포인트 — 로그인 불필요)
- * body: { username, contact, new_password, new_password_confirm }
- *
- * contact: 사용자가 등록한 전화번호 또는 이메일 중 하나와 일치해야 함.
  * IP 기반 횟수 제한 적용 (5분 내 5회 초과 시 10분 차단).
  */
 
-// 비밀번호 초기화 rate-limit (username 열거 공격 방지)
+// 비밀번호 초기화 rate-limit
 const RESET_WINDOW_MS = 5 * 60 * 1000;
 const RESET_MAX_PER_IP = 5;
 const RESET_BLOCK_MS = 10 * 60 * 1000;
@@ -287,7 +178,7 @@ function checkResetRateLimit(ip: string): { allowed: boolean; retryAfterSec: num
   return { allowed: true, retryAfterSec: 0 };
 }
 
-router.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+router.post('/reset-password-direct', async (req: Request, res: Response): Promise<void> => {
   const clientIp = req.ip ?? '';
   const rateLimit = checkResetRateLimit(clientIp);
   if (!rateLimit.allowed) {
@@ -296,19 +187,14 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
     return;
   }
 
-  const { username, contact, new_password, new_password_confirm } = req.body as {
+  const { username, new_password, new_password_confirm } = req.body as {
     username?: string;
-    contact?: string;
     new_password?: string;
     new_password_confirm?: string;
   };
 
-  if (!username || typeof username !== 'string' || username.trim() === '') {
-    sendError(res, '계정명을 입력해주세요.', 400, 'INVALID_INPUT');
-    return;
-  }
-  if (!contact || typeof contact !== 'string' || contact.trim() === '') {
-    sendError(res, '등록된 전화번호 또는 이메일을 입력해주세요.', 400, 'INVALID_INPUT');
+  if (!username || !['admin', 'ad_team'].includes(username)) {
+    sendError(res, '유효하지 않은 계정입니다.', 400, 'INVALID_INPUT');
     return;
   }
   if (!new_password || typeof new_password !== 'string' || new_password.length < 6) {
@@ -320,15 +206,10 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
     return;
   }
 
-  const result = await selfResetPassword(username.trim(), contact.trim(), new_password);
+  const result = await directResetPassword(username, new_password);
 
-  if (result === 'not_found' || result === 'contact_mismatch') {
-    // 보안: 어느 쪽 실패인지 외부에 노출하지 않음
-    sendError(res, '계정명 또는 연락처 정보가 일치하지 않습니다.', 401, 'RESET_FAILED');
-    return;
-  }
-  if (result === 'no_contact') {
-    sendError(res, '이 계정에는 등록된 연락처 정보가 없습니다. 관리자에게 문의해주세요.', 400, 'NO_CONTACT');
+  if (result === 'not_found') {
+    sendError(res, '계정을 찾을 수 없습니다.', 404, 'NOT_FOUND');
     return;
   }
 

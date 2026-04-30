@@ -29,11 +29,10 @@ import healthRouter from './modules/health/health.router';
 import authRouter from './modules/auth/auth.router';
 import channelsRouter from './modules/channels/channels.router';
 import requestsRouter from './modules/requests/requests.router';
-import storageCleanupRouter from './modules/files/storage-cleanup.router';
-import usersRouter from './modules/users/users.router';
+// import storageCleanupRouter from './modules/files/storage-cleanup.router';
 import auditRouter from './modules/audit/audit.router';
 import statsRouter from './modules/stats/stats.router';
-import registrationsRouter from './modules/registrations/registrations.router';
+import systemSettingsRouter from './modules/system-settings/system-settings.router';
 
 const app: Application = express();
 const REQUEST_BODY_LIMIT = '256kb';
@@ -99,11 +98,8 @@ app.use('/api/channels', channelsRouter);
 // 요청 관리 (등록/목록/상세/승인/반려 + 항목 파일 선택)
 app.use('/api/requests', requestsRouter);
 
-// 공유 NAS 복사본 삭제
-app.use('/api/files', storageCleanupRouter);
-
-// 사용자 관리 (admin 전용: 목록/생성/수정/비밀번호 초기화)
-app.use('/api/users', usersRouter);
+// 공유 NAS 복사본 삭제 (매뉴얼 삭제 기능 제거로 인해 비활성화. 1일 후 자동 삭제 스케줄러가 처리함)
+// app.use('/api/files', storageCleanupRouter);
 
 // 감사 로그 조회 (admin 전용)
 app.use('/api/audit', auditRouter);
@@ -111,8 +107,10 @@ app.use('/api/audit', auditRouter);
 // 통계 대시보드 + CSV 내보내기 (admin 전용)
 app.use('/api/stats', statsRouter);
 
-// 회원가입 신청 관리 (tech_team + admin 전용, 신청 자체는 auth.router의 /register로 처리)
-app.use('/api/registrations', registrationsRouter);
+
+
+// 시스템 설정 (admin 전용 + public)
+app.use('/api/system-settings', systemSettingsRouter);
 
 // ===== React 정적 파일 서빙 =====
 // FRONTEND_DIST_PATH 가 주입된 경우 Vite 빌드 결과물(frontend/dist)을

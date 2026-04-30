@@ -5,7 +5,7 @@
  *   완료된 복사본 삭제 (tech_team, admin)
  */
 import { Router, Request, Response, IRouter } from 'express';
-import { requireAuth, requirePermission, getCurrentUser } from '../../common/auth.middleware';
+import { requireAuth, getCurrentUser } from '../../common/auth.middleware';
 import { sendError, sendSuccess } from '../../common/response';
 import { deleteCopiedFile } from './storage-cleanup.service';
 
@@ -14,7 +14,6 @@ const router: IRouter = Router();
 router.delete(
   '/copied-files/:copyJobId',
   requireAuth,
-  requirePermission('canCopy'),
   async (req: Request, res: Response): Promise<void> => {
     const user = getCurrentUser(req);
     const copyJobId = parseInt(req.params.copyJobId, 10);

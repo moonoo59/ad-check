@@ -109,8 +109,7 @@ App.tsx                    # React Router 라우팅 + 권한 보호
 
 | 역할 | 권한 |
 |------|------|
-| `ad_team` | 요청 등록/조회/결과 확인 |
-| `tech_team` | 요청 검토/승인/반려/복사 실행 |
+| `ad_team` | 요청 등록/조회/결과 확인/승인/반려/복사 실행 (관리 메뉴 제외 전체) |
 | `admin` | 채널 매핑, 사용자 관리, 감사 로그, 통계, 위 모든 것 |
 
 `/admin/*` 라우트는 admin만 접근 가능. 프론트(`App.tsx` `RequireAdmin`)와 백엔드(`auth.middleware.ts`) 양쪽에서 검사.
@@ -216,7 +215,9 @@ DB 타임스탬프는 UTC ISO 형식(`new Date().toISOString()`)으로 저장한
 - 웹 다운로드: `GET /api/requests/:id/items/:itemId/download`
 - 1일 자동 정리: `delivery-cleanup.service.ts` (1시간 간격 스케줄러, `index.ts` 기동 시 등록)
 - Excel 내보내기: `GET /api/requests/export-excel` (요청 목록 CSV 다운로드)
-- 화면 역할 표시명: ad_team → "채널 담당자", tech_team → "대표 담당자" (role 코드는 변경 없음)
+- 화면 역할 표시명: ad_team → "광고팀", admin → "서버 관리자"
+- 공용 계정 체제: 개인별 계정 없이 `ad_team`, `admin` 공용 계정 2개만 운영 (모든 데이터 이관 완료)
+- 권한 단순화: 광고팀이 요청 관리(승인/반려/복사) 권한을 가짐. 관리자는 시스템 설정 전용.
 
 ---
 

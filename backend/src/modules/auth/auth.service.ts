@@ -17,9 +17,6 @@ export interface AuthUser {
   username: string;
   display_name: string;
   role: string;
-  can_copy: number;        // 파일 전송 권한 (admin은 항상 1)
-  can_view_stats: number;  // 통계 조회 권한 (admin은 항상 1)
-  assigned_channels: string;
 }
 
 // DB에서 조회되는 사용자 행 타입
@@ -30,9 +27,6 @@ interface UserRow {
   role: string;
   password_hash: string;
   is_active: number;
-  can_copy: number;
-  can_view_stats: number;
-  assigned_channels: string;
 }
 
 /**
@@ -45,7 +39,7 @@ interface UserRow {
 export async function login(username: string, password: string): Promise<AuthUser | null> {
   // 활성 사용자만 허용 (is_active=0은 로그인 차단)
   const user = db
-    .prepare('SELECT id, username, display_name, role, password_hash, is_active, can_copy, can_view_stats, assigned_channels FROM users WHERE username = ?')
+    .prepare('SELECT id, username, display_name, role, password_hash, is_active FROM users WHERE username = ?')
     .get(username) as UserRow | undefined;
 
   if (!user) {
@@ -69,16 +63,11 @@ export async function login(username: string, password: string): Promise<AuthUse
     return null;
   }
 
-  // admin은 컬럼 값과 무관하게 항상 모든 권한 보유
-  const isAdmin = user.role === 'admin';
   return {
     id: user.id,
     username: user.username,
     display_name: user.display_name,
     role: user.role,
-    can_copy: isAdmin ? 1 : user.can_copy,
-    can_view_stats: isAdmin ? 1 : user.can_view_stats,
-    assigned_channels: user.assigned_channels,
   };
 }
 
@@ -123,41 +112,23 @@ export async function changePassword(
 }
 
 /**
- * 본인 비밀번호 자가 초기화
+ * 무인증 비밀번호 초기화 (공용 계정용)
  *
- * 로그인 없이 username + 등록된 전화번호/이메일로 본인 확인 후 비밀번호를 변경한다.
- * contact는 phone 또는 email 중 하나와 일치하면 통과.
+ * 로그인 없이 역할(username) 지정만으로 비밀번호를 무조건 덮어씁니다.
  *
- * 보안 주의:
- * - 사용자 존재 여부를 contact 불일치와 동일한 오류로 응답해 username 열거 공격을 방지
- * - 라우터에서 rate-limit 적용 필수
- *
- * @param username  계정명
- * @param contact   등록된 전화번호 또는 이메일 (어느 한 쪽과 일치해야 함)
+ * @param username  계정명 ('admin' 또는 'ad_team')
  * @param newPassword 새 비밀번호 (평문)
- * @returns 'ok' | 'not_found' | 'contact_mismatch' | 'no_contact'
+ * @returns 'ok' | 'not_found'
  */
-export async function selfResetPassword(
+export async function directResetPassword(
   username: string,
-  contact: string,
   newPassword: string,
-): Promise<'ok' | 'not_found' | 'contact_mismatch' | 'no_contact'> {
+): Promise<'ok' | 'not_found'> {
   const user = db.prepare(`
-    SELECT id, phone, email FROM users WHERE username = ? AND is_active = 1
-  `).get(username) as { id: number; phone: string | null; email: string | null } | undefined;
+    SELECT id FROM users WHERE username = ? AND is_active = 1
+  `).get(username) as { id: number } | undefined;
 
-  // 사용자 미존재도 contact_mismatch로 통일 — username 존재 여부 노출 방지
   if (!user) return 'not_found';
-
-  // 연락처 미등록 계정은 자가 초기화 불가 → 관리자 초기화 필요
-  if (!user.phone && !user.email) return 'no_contact';
-
-  // 전화번호 또는 이메일 중 하나라도 일치하면 통과
-  const trimmed = contact.trim();
-  const phoneMatch = user.phone && user.phone.trim() === trimmed;
-  const emailMatch = user.email && user.email.trim().toLowerCase() === trimmed.toLowerCase();
-
-  if (!phoneMatch && !emailMatch) return 'contact_mismatch';
 
   const newHash = await bcrypt.hash(newPassword, 10);
   const now = utcNow();
@@ -166,7 +137,7 @@ export async function selfResetPassword(
     db.prepare(`UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`).run(newHash, now, user.id);
     db.prepare(`
       INSERT INTO audit_logs (user_id, action, entity_type, entity_id, created_at)
-      VALUES (?, 'user_self_password_reset', 'users', ?, ?)
+      VALUES (?, 'user_direct_password_reset', 'users', ?, ?)
     `).run(user.id, user.id, now);
   })();
 
@@ -181,21 +152,17 @@ export async function selfResetPassword(
  */
 export function getUserById(userId: number): AuthUser | null {
   const user = db
-    .prepare('SELECT id, username, display_name, role, is_active, can_copy, can_view_stats, assigned_channels FROM users WHERE id = ?')
+    .prepare('SELECT id, username, display_name, role, is_active FROM users WHERE id = ?')
     .get(userId) as (AuthUser & { is_active: number }) | undefined;
 
   if (!user || !user.is_active) {
     return null;
   }
 
-  const isAdmin = user.role === 'admin';
   return {
     id: user.id,
     username: user.username,
     display_name: user.display_name,
     role: user.role,
-    can_copy: isAdmin ? 1 : user.can_copy,
-    can_view_stats: isAdmin ? 1 : user.can_view_stats,
-    assigned_channels: user.assigned_channels,
   };
 }

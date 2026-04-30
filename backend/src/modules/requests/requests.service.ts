@@ -209,10 +209,7 @@ export function getRequests(
   const conditions: string[] = ['r.is_deleted = 0'];
   const params: (string | number)[] = [];
 
-  if (currentUserRole === 'ad_team' && !currentUserCanCopy) {
-    conditions.push('r.requester_id = ?');
-    params.push(currentUserId);
-  } else if (filter.requester_id) {
+  if (filter.requester_id) {
     conditions.push('r.requester_id = ?');
     params.push(filter.requester_id);
   }
@@ -256,7 +253,8 @@ export function getRequests(
         FROM (SELECT DISTINCT ri2.broadcast_date AS bd FROM request_items ri2 WHERE ri2.request_id = r.id)
       ) AS broadcast_dates,
       r.created_at,
-      r.updated_at
+      r.updated_at,
+      r.resend_count
     FROM requests r
     LEFT JOIN users u_req ON u_req.id = r.requester_id
     LEFT JOIN users u_rev ON u_rev.id = r.reviewed_by
@@ -280,11 +278,7 @@ export function getRequestDetail(
   currentUserCanCopy = false,
 ): { request: RequestRow; items: (RequestItemRow & { file_search_results: FileSearchResultRow[]; copy_job: CopyJobRow | null })[] } | null {
   const params: (number | string)[] = [requestId];
-  const accessCondition = currentUserRole === 'ad_team' && !currentUserCanCopy ? ' AND r.requester_id = ?' : '';
-
-  if (currentUserRole === 'ad_team' && !currentUserCanCopy) {
-    params.push(currentUserId);
-  }
+  const accessCondition = '';
 
   const request = db.prepare(`
     SELECT
@@ -299,11 +293,12 @@ export function getRequestDetail(
       r.reject_reason,
       (SELECT COUNT(*) FROM request_items ri WHERE ri.request_id = r.id) AS item_count,
       r.created_at,
-      r.updated_at
+      r.updated_at,
+      r.resend_count
     FROM requests r
     LEFT JOIN users u_req ON u_req.id = r.requester_id
     LEFT JOIN users u_rev ON u_rev.id = r.reviewed_by
-    WHERE r.id = ? AND r.is_deleted = 0${accessCondition}
+    WHERE r.id = ? AND r.is_deleted = 0
   `).get(...params) as RequestRow | undefined;
 
   if (!request) {
@@ -733,9 +728,6 @@ export function prepareForResend(
   if (!request) {
     return '요청을 찾을 수 없습니다.';
   }
-  if (currentUserRole === 'ad_team' && request.requester_id !== userId) {
-    return '본인 요청만 재전송할 수 있습니다.';
-  }
   if (request.status !== 'done') {
     return `현재 상태(${request.status})에서는 재전송이 불가능합니다. 완료 상태에서만 재전송할 수 있습니다.`;
   }
@@ -763,7 +755,7 @@ export function prepareForResend(
     `).run(now, requestId);
 
     db.prepare(`
-      UPDATE requests SET status = 'approved', updated_at = ? WHERE id = ?
+      UPDATE requests SET status = 'approved', resend_count = resend_count + 1, updated_at = ? WHERE id = ?
     `).run(now, requestId);
 
     db.prepare(`
@@ -927,3 +919,19 @@ export function deleteRequest(requestId: number, adminId: number): true | string
 
   return true;
 }
+
+/**
+ * 중복 없는 광고주 목록 조회 (연관 검색어용)
+ */
+export function getUniqueAdvertisers(): string[] {
+  const rows = db.prepare(`
+    SELECT DISTINCT advertiser
+    FROM request_items
+    WHERE advertiser IS NOT NULL AND advertiser != ''
+    ORDER BY advertiser ASC
+    LIMIT 500
+  `).all() as { advertiser: string }[];
+
+  return rows.map((r) => r.advertiser);
+}
+

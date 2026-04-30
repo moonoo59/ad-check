@@ -18,8 +18,7 @@ export interface ApiResponse<T = unknown> {
 
 // ─── 사용자 ───────────────────────────────────────────────────────────────────
 
-export type UserRole = 'admin' | 'tech_team' | 'ad_team';
-export type PublicRegistrationRole = Exclude<UserRole, 'admin'>;
+export type UserRole = 'admin' | 'ad_team';
 
 export interface HealthInfo {
   server: 'ok' | 'error';
@@ -33,46 +32,9 @@ export interface HealthInfo {
 
 export interface User {
   id: number;
-  username: string;
+  username: string;       // 내부 식별자 ('admin' 또는 'ad_team')
   display_name: string;
   role: UserRole;
-  is_active: number;           // 1 | 0
-  can_copy: number;            // 파일 전송 권한 (1=부여, 0=미부여, admin은 항상 1)
-  can_view_stats: number;      // 통계 조회 권한 (1=부여, 0=미부여, admin은 항상 1)
-  assigned_channels: string;   // 담당채널 JSON 배열 문자열 (예: '["비즈","스포츠"]')
-  phone: string | null;        // 비밀번호 자가 초기화용 전화번호 (선택)
-  email: string | null;        // 비밀번호 자가 초기화용 이메일 (선택)
-  created_at: string;
-}
-
-// ─── 회원가입 신청 ────────────────────────────────────────────────────────────
-
-export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
-
-export interface Registration {
-  id: number;
-  username: string;
-  display_name: string;
-  role: UserRole;
-  assigned_channels: string;      // JSON 배열 문자열
-  status: RegistrationStatus;
-  reviewed_by: number | null;
-  reviewed_at: string | null;
-  reject_reason: string | null;
-  reviewer_name: string | null;   // 처리한 관리자 표시명
-  created_at: string;
-  updated_at: string;
-}
-
-/** POST /api/auth/register 요청 바디 */
-export interface RegisterBody {
-  username: string;
-  display_name: string;
-  role: PublicRegistrationRole;
-  password: string;
-  assigned_channels: string[];    // 문자열 배열
-  phone?: string | null;
-  email?: string | null;
 }
 
 // ─── 채널 매핑 ────────────────────────────────────────────────────────────────
@@ -150,6 +112,7 @@ export interface Request {
   updated_at: string;
   item_count?: number;        // 집계 결과
   broadcast_dates?: string;   // 항목별 방송일자 콤마 구분 (예: "2026-03-07,2026-03-08")
+  resend_count: number;       // 재전송 요청 횟수
 }
 
 // ─── 요청 항목 (request_items) ────────────────────────────────────────────────
@@ -294,33 +257,6 @@ export interface CreateChannelBody {
   display_name: string;
   nas_folder: string;
   description?: string;
-}
-
-// ─── 사용자 관리 DTO ──────────────────────────────────────────────────────────
-
-/** POST /api/users 요청 바디 */
-export interface CreateUserBody {
-  username: string;
-  display_name: string;
-  role: UserRole;
-  password: string;
-  can_copy?: number;
-  can_view_stats?: number;
-  assigned_channels?: string[];   // 담당채널 배열 (미지정 시 빈 배열)
-  phone?: string | null;
-  email?: string | null;
-}
-
-/** PATCH /api/users/:id 요청 바디 */
-export interface UpdateUserBody {
-  display_name?: string;
-  role?: UserRole;
-  is_active?: number;
-  can_copy?: number;
-  can_view_stats?: number;
-  assigned_channels?: string[];   // 담당채널 배열
-  phone?: string | null;
-  email?: string | null;
 }
 
 // ─── 감사 로그 ────────────────────────────────────────────────────────────────

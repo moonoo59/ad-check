@@ -13,7 +13,6 @@ interface RequestActionDialogsProps {
   approveConfirmOpen: boolean;
   retryConfirmOpen: boolean;
   retryCopyConfirmOpen: boolean;
-  deleteCopiedFileConfirmOpen: boolean;
   deleteConfirmOpen: boolean;
   rejectModalOpen: boolean;
   rejectReason: string;
@@ -25,8 +24,6 @@ interface RequestActionDialogsProps {
   onRetryConfirm: () => void;
   onRetryCopyCancel: () => void;
   onRetryCopyConfirm: () => void;
-  onDeleteCopiedFileCancel: () => void;
-  onDeleteCopiedFileConfirm: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   onRejectOpenChange: (open: boolean) => void;
@@ -42,7 +39,6 @@ export default function RequestActionDialogs({
   approveConfirmOpen,
   retryConfirmOpen,
   retryCopyConfirmOpen,
-  deleteCopiedFileConfirmOpen,
   deleteConfirmOpen,
   rejectModalOpen,
   rejectReason,
@@ -54,8 +50,6 @@ export default function RequestActionDialogs({
   onRetryConfirm,
   onRetryCopyCancel,
   onRetryCopyConfirm,
-  onDeleteCopiedFileCancel,
-  onDeleteCopiedFileConfirm,
   onDeleteCancel,
   onDeleteConfirm,
   onRejectOpenChange,
@@ -70,7 +64,7 @@ export default function RequestActionDialogs({
       <ConfirmDialog
         open={approveConfirmOpen}
         title="선택된 항목 승인 복사"
-        message="선택된 파일을 공유 NAS로 복사합니다. 이 작업은 취소할 수 없습니다. 계속하시겠습니까?"
+        message="선택된 파일을 로컬 스토리지로 복사합니다. 이 작업은 취소할 수 없습니다. 계속하시겠습니까?"
         confirmLabel="승인 및 복사"
         onConfirm={onApproveConfirm}
         onCancel={onApproveCancel}
@@ -98,15 +92,7 @@ export default function RequestActionDialogs({
         onCancel={onRetryCopyCancel}
       />
 
-      <ConfirmDialog
-        open={deleteCopiedFileConfirmOpen}
-        title="공유 NAS 복사본 삭제"
-        message="공유 NAS의 복사 파일을 삭제하시겠습니까? 파일이 없어도 삭제 처리로 기록됩니다."
-        confirmLabel="파일 삭제"
-        confirmVariant="red"
-        onConfirm={onDeleteCopiedFileConfirm}
-        onCancel={onDeleteCopiedFileCancel}
-      />
+
 
       <ConfirmDialog
         open={deleteConfirmOpen}
@@ -160,7 +146,7 @@ export default function RequestActionDialogs({
             <p className="app-eyebrow">Resend</p>
             <DialogTitle>재전송 사유 입력</DialogTitle>
             <DialogDescription>
-              재전송 요청은 완료 이력과 함께 기록되며, 이후 관리자 또는 기술팀이 다시 복사를 실행합니다.
+              재전송 요청은 완료 이력과 함께 기록되며, 이후 관리자 또는 광고팀이 다시 복사를 실행합니다.
             </DialogDescription>
           </DialogHeader>
           <textarea

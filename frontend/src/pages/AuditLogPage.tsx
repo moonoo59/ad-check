@@ -13,8 +13,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ClipboardList } from 'lucide-react';
-import { getAuditLogs, getUsers } from '../lib/apiService';
-import type { AuditLog, AuditLogQuery, User } from '../types';
+import { getAuditLogs } from '../lib/apiService';
+import type { AuditLog, AuditLogQuery } from '../types';
 import PageHeader from '../components/PageHeader';
 import ErrorBanner from '../components/ErrorBanner';
 import EmptyState from '../components/EmptyState';
@@ -53,24 +53,15 @@ export default function AuditLogPage() {
 
   // 필터 상태
   const [action, setAction]         = useState('');
-  const [userId, setUserId]         = useState('');
   const [from, setFrom]             = useState('');
   const [to, setTo]                 = useState('');
   const [entityType, setEntityType] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({
     action: '',
-    userId: '',
     from: '',
     to: '',
     entityType: '',
   });
-
-  // 사용자 목록 (user_id 필터 드롭다운)
-  const [userList, setUserList] = useState<User[]>([]);
-
-  useEffect(() => {
-    getUsers(true).then(setUserList).catch(() => {});
-  }, []);
 
   const load = useCallback(async (p: number) => {
     setIsLoading(true);
@@ -78,7 +69,6 @@ export default function AuditLogPage() {
     try {
       const query: AuditLogQuery = { page: p, limit: PAGE_SIZE };
       if (appliedFilters.action) query.action = appliedFilters.action;
-      if (appliedFilters.userId) query.user_id = parseInt(appliedFilters.userId, 10);
       if (appliedFilters.from)   query.from = appliedFilters.from;
       if (appliedFilters.to)     query.to = appliedFilters.to;
       if (appliedFilters.entityType) query.entity_type = appliedFilters.entityType;
@@ -99,7 +89,7 @@ export default function AuditLogPage() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const nextFilters = { action, userId, from, to, entityType };
+    const nextFilters = { action, from, to, entityType };
     setAppliedFilters(nextFilters);
     // 필터 적용 시 1페이지로 초기화
     if (page !== 1) {
@@ -111,13 +101,11 @@ export default function AuditLogPage() {
 
   function handleReset() {
     setAction('');
-    setUserId('');
     setFrom('');
     setTo('');
     setEntityType('');
     setAppliedFilters({
       action: '',
-      userId: '',
       from: '',
       to: '',
       entityType: '',
@@ -150,21 +138,6 @@ export default function AuditLogPage() {
             <option value="">전체</option>
             {Object.entries(ACTION_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* 사용자 */}
-        <div className="flex flex-col gap-1">
-          <label className="app-label">사용자</label>
-          <select
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="app-select min-w-[140px]"
-          >
-            <option value="">전체</option>
-            {userList.map((u) => (
-              <option key={u.id} value={String(u.id)}>{u.display_name} ({u.username})</option>
             ))}
           </select>
         </div>

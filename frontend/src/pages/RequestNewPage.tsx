@@ -13,17 +13,17 @@
  * - 등록 성공: 요청 상세 화면으로 이동
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { FilePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { createRequest, getChannels } from '../lib/apiService';
+import { createRequest, getChannels, getAdvertisers } from '../lib/apiService';
 import { normalizeTimeInput, TIME_RANGE_OPTIONS, timeToSeconds } from '../lib/requestTime';
 import type { ChannelMapping } from '../types';
 import PageHeader from '../components/PageHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastMessage';
-import { useAuth } from '../contexts/AuthContext';
+
 
 interface ItemFormData {
   channel_mapping_id: string;
@@ -42,17 +42,7 @@ interface FormData {
 
 const MAX_ROWS = 20;
 
-function parseAssignedChannels(value: string | undefined): string[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((channel): channel is string => typeof channel === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
+
 
 const defaultItem = (): ItemFormData => ({
   channel_mapping_id: '',
@@ -68,7 +58,7 @@ const defaultItem = (): ItemFormData => ({
 export default function RequestNewPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { user } = useAuth();
+
 
   const [channels, setChannels] = useState<ChannelMapping[]>([]);
   const [channelLoading, setChannelLoading] = useState(true);
@@ -76,29 +66,21 @@ export default function RequestNewPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
   const [copiedItem, setCopiedItem] = useState<ItemFormData | null>(null);
+  const [advertisers, setAdvertisers] = useState<string[]>([]);
 
   useEffect(() => {
     getChannels(false)
       .then(setChannels)
       .catch(() => showToast('채널 목록 로드 실패', 'error'))
       .finally(() => setChannelLoading(false));
+
+    getAdvertisers()
+      .then(setAdvertisers)
+      .catch(() => {}); // 자동완성 실패는 무시
   }, [showToast]);
 
-  const assignedChannels = useMemo(
-    () => parseAssignedChannels(user?.assigned_channels),
-    [user?.assigned_channels],
-  );
-  const isChannelRestricted = user?.role === 'ad_team';
-  const availableChannels = useMemo(
-    () => (
-      isChannelRestricted
-        ? channels.filter((channel) => assignedChannels.includes(channel.display_name))
-        : channels
-    ),
-    [assignedChannels, channels, isChannelRestricted],
-  );
-  const isRegistrationBlocked = isChannelRestricted && !channelLoading && availableChannels.length === 0;
-  const isFormDisabled = isSubmitting || isRegistrationBlocked;
+  const availableChannels = channels;
+  const isFormDisabled = isSubmitting;
 
   const {
     register,
@@ -117,11 +99,6 @@ export default function RequestNewPage() {
   const watchedItems = watch('items');
 
   const onSubmit = async (data: FormData) => {
-    if (isRegistrationBlocked) {
-      showToast('담당 채널이 지정되지 않았습니다. 관리자에게 문의하세요.', 'error');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const req = await createRequest({
@@ -259,35 +236,11 @@ export default function RequestNewPage() {
             <div className="flex flex-wrap gap-2">
               <span className="app-chip">행 복사·붙여넣기</span>
               <span className="app-chip">최대 {MAX_ROWS}행</span>
-              {isChannelRestricted && (
-                <span className="app-chip">담당 채널 {availableChannels.length}개</span>
-              )}
+
             </div>
           </div>
 
-          {isChannelRestricted && (
-            <div className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
-              isRegistrationBlocked
-                ? 'border-rose-200 bg-[rgba(255,244,244,0.96)] text-rose-700'
-                : 'border-[var(--app-border)] bg-[rgba(255,252,248,0.95)] text-[var(--app-text-soft)]'
-            }`}>
-              <p className="font-semibold text-[var(--app-text)]">내 담당 채널</p>
-              {availableChannels.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {availableChannels.map((channel) => (
-                    <span
-                      key={channel.id}
-                      className="inline-flex rounded-full border border-[var(--app-border)] bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--app-text-soft)]"
-                    >
-                      {channel.display_name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-1">담당 채널이 지정되지 않았습니다. 관리자에게 문의하세요.</p>
-              )}
-            </div>
-          )}
+
 
           <ul className="mt-3 grid gap-x-5 gap-y-2 text-sm leading-6 text-[var(--app-text-soft)] md:grid-cols-2 xl:grid-cols-4">
             <li>같은 광고주라도 방송일자나 시간대가 다르면 별도 행으로 입력하세요.</li>
@@ -296,18 +249,18 @@ export default function RequestNewPage() {
               송출 시간은 <strong className="font-semibold text-[var(--app-text)]">HH:MM</strong> 또는 <strong className="font-semibold text-[var(--app-text)]">HH:MM:SS</strong> 형식으로 입력하세요.
             </li>
             <li>
-              {isChannelRestricted
-                ? '담당 채널만 표시됩니다. 필요한 채널이 없으면 관리자에게 문의하세요.'
-                : '활성 채널만 표시됩니다. 필요한 채널이 없으면 관리자에게 채널 매핑 상태를 확인해주세요.'}
+              <strong className="font-semibold text-[var(--app-text)]">광고주 입력:</strong> 이전에 입력했던 광고주 명칭이 연관 검색어로 나타납니다.
+            </li>
+            <li>
+              방송일자 입력 시 숫자 8자리(예: 20240430)를 입력하면 자동으로 형식이 변환되며 다음 칸으로 이동합니다.
+            </li>
+            <li>
+              활성 채널만 표시됩니다. 필요한 채널이 없으면 관리자에게 채널 매핑 상태를 확인해주세요.
             </li>
           </ul>
         </div>
 
-        {isRegistrationBlocked && (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-[rgba(255,244,244,0.96)] px-4 py-3 text-sm text-rose-700">
-            담당 채널이 없어 요청을 등록할 수 없습니다. 관리자에게 담당 채널 배정을 요청하세요.
-          </div>
-        )}
+
 
         <div className="app-table-shell app-table-shell--flat mb-4">
           <table className="app-table app-table--compact app-table--fixed text-sm">
@@ -396,6 +349,7 @@ export default function RequestNewPage() {
                       <td>
                         <input
                           type="text"
+                          list="advertiser-options"
                           {...register(`items.${index}.advertiser`, {
                             required: '광고주를 입력하세요.',
                             maxLength: { value: 100, message: '100자 이하' },
@@ -405,6 +359,11 @@ export default function RequestNewPage() {
                           className={inputClass(!!itemErrors?.advertiser)}
                           placeholder="광고주명"
                         />
+                        <datalist id="advertiser-options">
+                          {advertisers.map((name) => (
+                            <option key={name} value={name} />
+                          ))}
+                        </datalist>
                         {itemErrors?.advertiser && (
                           <p className="mt-1 text-xs text-rose-600">{itemErrors.advertiser.message}</p>
                         )}
@@ -412,10 +371,28 @@ export default function RequestNewPage() {
 
                       <td className="align-top">
                         <input
-                          type="date"
+                          type="text"
+                          placeholder="2024-04-30"
+                          maxLength={10}
                           {...register(`items.${index}.broadcast_date`, {
                             required: '방송일자를 입력하세요.',
+                            validate: (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) || 'YYYY-MM-DD 형식',
                           })}
+                          onInput={(e) => {
+                            const input = e.currentTarget;
+                            let val = input.value.replace(/[^0-9]/g, '');
+                            if (val.length === 8) {
+                              const formatted = `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`;
+                              setValue(`items.${index}.broadcast_date`, formatted, { shouldValidate: true });
+                              
+                              // 다음 요소(시간대 select)로 포커스 이동
+                              const row = input.closest('tr');
+                              if (row) {
+                                const nextInput = row.querySelector('select[name$="req_time_start"]') as HTMLSelectElement;
+                                if (nextInput) nextInput.focus();
+                              }
+                            }
+                          }}
                           disabled={isFormDisabled}
                           className={inputClass(!!itemErrors?.broadcast_date)}
                         />
@@ -549,9 +526,7 @@ export default function RequestNewPage() {
           )}
           {availableChannels.length === 0 && !channelLoading && (
             <span className="text-xs text-rose-700">
-              {isChannelRestricted
-                ? '담당 채널이 없습니다. 관리자에게 문의하세요.'
-                : '등록된 활성 채널이 없습니다. 관리자에게 문의하세요.'}
+              등록된 활성 채널이 없습니다. 관리자에게 문의하세요.
             </span>
           )}
         </div>

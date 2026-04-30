@@ -1,5 +1,5 @@
 /**
- * 공유 NAS 내 복사본 정리 서비스
+ * 복사본 정리 서비스
  *
  * 사용 시나리오:
  * - 완료된 복사본 수동 삭제 (#5)
@@ -7,7 +7,7 @@
  *
  * 동작 원칙:
  * - 대상 파일이 이미 없어도 성공으로 처리한다.
- * - 요청일자 폴더가 비었을 때만 폴더를 삭제한다.
+ * - 대상 저장소의 요청일자/채널 폴더가 비었을 때만 폴더를 삭제한다.
  * - 삭제 이력은 copy_jobs.deleted_at / deleted_by 와 audit_logs 에 남긴다.
  */
 import fs from 'fs/promises';
@@ -33,6 +33,15 @@ interface StagedDeleteFile {
   originalPath: string;
   trashPath: string;
   parentDir: string;
+  rootPath: string;
+  trashRoot: string;
+}
+
+interface CleanupTarget {
+  filePath: string;
+  rootPath: string;
+  trashRoot: string;
+  storageLabel: string;
 }
 
 export interface CopiedFileDeleteResult {
@@ -106,20 +115,20 @@ async function deleteFileForJob(
   deletedBy: number,
   auditAction: string,
 ): Promise<CopiedFileDeleteResult> {
-  await ensureSharedNasMounted();
+  const target = resolveCleanupTarget(job.dest_path);
+  await ensureStorageAvailable(target);
 
-  const safeDestPath = resolvePathWithinSharedNas(job.dest_path);
   let fileExisted = false;
   let folderDeleted = false;
   let stagedFile: StagedDeleteFile | null = null;
 
   try {
-    const staged = await stageFileForDeletion(safeDestPath, job.id);
+    const staged = await stageFileForDeletion(target, job.id);
     fileExisted = staged.fileExisted;
     folderDeleted = staged.folderDeleted;
     stagedFile = staged.stagedFile;
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : '공유 NAS 복사본 삭제 준비에 실패했습니다.');
+    throw new Error(error instanceof Error ? error.message : '복사본 삭제 준비에 실패했습니다.');
   }
 
   const now = utcNow();
@@ -141,7 +150,8 @@ async function deleteFileForJob(
         job.id,
         JSON.stringify({
           request_item_id: job.request_item_id,
-          dest_path: safeDestPath,
+          dest_path: target.filePath,
+          storage: target.storageLabel,
           file_existed: fileExisted,
           folder_deleted: folderDeleted,
         }),
@@ -156,7 +166,7 @@ async function deleteFileForJob(
         log.error('복사본 삭제 후 DB 기록과 파일 복구 모두 실패', {
           copyJobId: job.id,
           requestItemId: job.request_item_id,
-          destPath: safeDestPath,
+          destPath: target.filePath,
           dbError: error instanceof Error ? error.message : String(error),
           restoreError: restoreError instanceof Error ? restoreError.message : String(restoreError),
         });
@@ -168,12 +178,12 @@ async function deleteFileForJob(
 
     if (folderDeleted) {
       try {
-        await fs.mkdir(path.dirname(safeDestPath), { recursive: true });
+        await fs.mkdir(path.dirname(target.filePath), { recursive: true });
       } catch (restoreError) {
         log.error('삭제 기록 실패 후 빈 폴더 복구 실패', {
           copyJobId: job.id,
           requestItemId: job.request_item_id,
-          destPath: safeDestPath,
+          destPath: target.filePath,
           dbError: error instanceof Error ? error.message : String(error),
           restoreError: restoreError instanceof Error ? restoreError.message : String(restoreError),
         });
@@ -188,10 +198,11 @@ async function deleteFileForJob(
     await purgeStagedFile(stagedFile);
   }
 
-  log.info('공유 NAS 복사본 삭제 처리 완료', {
+  log.info('복사본 삭제 처리 완료', {
     copyJobId: job.id,
     requestItemId: job.request_item_id,
-    destPath: safeDestPath,
+    destPath: target.filePath,
+    storage: target.storageLabel,
     fileExisted,
     folderDeleted,
   });
@@ -199,68 +210,87 @@ async function deleteFileForJob(
   return {
     copy_job_id: job.id,
     request_item_id: job.request_item_id,
-    dest_path: safeDestPath,
+    dest_path: target.filePath,
     file_existed: fileExisted,
     folder_deleted: folderDeleted,
     already_missing: !fileExisted,
   };
 }
 
-async function ensureSharedNasMounted(): Promise<void> {
+async function ensureStorageAvailable(target: CleanupTarget): Promise<void> {
   try {
-    const stat = await fs.stat(env.SHARED_NAS_MOUNT);
+    const stat = await fs.stat(target.rootPath);
     if (!stat.isDirectory()) {
       throw new Error();
     }
   } catch {
-    throw new Error('공유 NAS가 마운트되어 있지 않아 삭제를 진행할 수 없습니다.');
+    throw new Error(`${target.storageLabel} 경로가 준비되어 있지 않아 삭제를 진행할 수 없습니다.`);
   }
 }
 
-function resolvePathWithinSharedNas(targetPath: string): string {
-  return resolvePathWithinRoot(env.SHARED_NAS_MOUNT, targetPath, '공유 NAS 삭제 경로');
-}
+function resolveCleanupTarget(targetPath: string): CleanupTarget {
+  const candidates = [
+    { rootPath: env.LOCAL_DELIVERY_PATH, storageLabel: '로컬 전달 스토리지' },
+    ...(env.LEGACY_LOCAL_DELIVERY_PATH
+      ? [{ rootPath: env.LEGACY_LOCAL_DELIVERY_PATH, storageLabel: '레거시 로컬 전달 스토리지' }]
+      : []),
+    { rootPath: env.SHARED_NAS_MOUNT, storageLabel: '공유 NAS' },
+  ];
 
-function getTrashRoot(): string {
-  return path.join(path.resolve(env.SHARED_NAS_MOUNT), '.ad-check-trash');
+  for (const candidate of candidates) {
+    try {
+      const rootPath = path.resolve(candidate.rootPath);
+      return {
+        filePath: resolvePathWithinRoot(rootPath, targetPath, `${candidate.storageLabel} 삭제 경로`),
+        rootPath,
+        trashRoot: path.join(rootPath, '.ad-check-trash'),
+        storageLabel: candidate.storageLabel,
+      };
+    } catch {
+      // 다음 저장소 후보를 확인한다.
+    }
+  }
+
+  throw new Error('복사본 삭제 경로가 허용된 저장소 경로를 벗어났습니다.');
 }
 
 async function stageFileForDeletion(
-  filePath: string,
+  target: CleanupTarget,
   copyJobId: number,
 ): Promise<{ fileExisted: boolean; folderDeleted: boolean; stagedFile: StagedDeleteFile | null }> {
-  const parentDir = path.dirname(filePath);
+  const parentDir = path.dirname(target.filePath);
 
   try {
-    await fs.access(filePath);
+    await fs.access(target.filePath);
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code !== 'ENOENT') {
       throw error;
     }
 
-    const folderDeleted = await removeDirIfEmpty(parentDir);
+    const folderDeleted = await removeDirIfEmpty(parentDir, target.rootPath, target.trashRoot);
     return { fileExisted: false, folderDeleted, stagedFile: null };
   }
 
-  const trashRoot = getTrashRoot();
-  await fs.mkdir(trashRoot, { recursive: true });
+  await fs.mkdir(target.trashRoot, { recursive: true });
 
   const trashPath = path.join(
-    trashRoot,
-    `${Date.now()}-${copyJobId}-${randomUUID()}-${path.basename(filePath)}`,
+    target.trashRoot,
+    `${Date.now()}-${copyJobId}-${randomUUID()}-${path.basename(target.filePath)}`,
   );
 
-  await fs.rename(filePath, trashPath);
-  const folderDeleted = await removeDirIfEmpty(parentDir);
+  await fs.rename(target.filePath, trashPath);
+  const folderDeleted = await removeDirIfEmpty(parentDir, target.rootPath, target.trashRoot);
 
   return {
     fileExisted: true,
     folderDeleted,
     stagedFile: {
-      originalPath: filePath,
+      originalPath: target.filePath,
       trashPath,
       parentDir,
+      rootPath: target.rootPath,
+      trashRoot: target.trashRoot,
     },
   };
 }
@@ -284,15 +314,15 @@ async function purgeStagedFile(stagedFile: StagedDeleteFile): Promise<void> {
     }
   }
 
-  await removeDirIfEmpty(path.dirname(stagedFile.trashPath));
+  await removeDirIfEmpty(path.dirname(stagedFile.trashPath), stagedFile.rootPath, stagedFile.trashRoot);
 }
 
-async function removeDirIfEmpty(dirPath: string): Promise<boolean> {
-  const sharedRoot = path.resolve(env.SHARED_NAS_MOUNT);
-  const trashRoot = getTrashRoot();
+async function removeDirIfEmpty(dirPath: string, rootPath: string, trashRoot: string): Promise<boolean> {
+  const storageRoot = path.resolve(rootPath);
+  const resolvedTrashRoot = path.resolve(trashRoot);
   const resolvedDir = path.resolve(dirPath);
 
-  if (resolvedDir === sharedRoot || resolvedDir === trashRoot) {
+  if (resolvedDir === storageRoot || resolvedDir === resolvedTrashRoot) {
     return false;
   }
 
