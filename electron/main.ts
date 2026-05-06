@@ -54,7 +54,7 @@ interface HealthPayload {
   local_base_url?: string;
 }
 
-const APP_NAME = '광고증빙요청시스템';
+const APP_NAME = 'AdCheck';
 const APP_BUNDLE_ID = 'com.broadcast.adcheck';
 const DEFAULT_PORT = 4000;
 const DEFAULT_PUBLIC_BASE_URL = 'http://adcheck.tech.net';

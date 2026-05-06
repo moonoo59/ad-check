@@ -388,6 +388,60 @@ export default function RequestDetailPage() {
     }
   };
 
+  const handleDownloadAll = async () => {
+    if (!detail) return;
+
+    // 완료되었고 삭제되지 않은 항목만 필터링
+    const downloadableItems = detail.items.filter(
+      (item) => item.item_status === 'done' && !item.copy_job?.deleted_at
+    );
+
+    if (downloadableItems.length === 0) {
+      showToast('다운로드할 수 있는 파일이 없습니다.', 'warning');
+      return;
+    }
+
+    // source_path 기준으로 중복 제거
+    const uniqueItems: typeof downloadableItems = [];
+    const seenPaths = new Set<string>();
+
+    for (const item of downloadableItems) {
+      const sourcePath = item.copy_job?.source_path;
+      if (sourcePath) {
+        if (!seenPaths.has(sourcePath)) {
+          seenPaths.add(sourcePath);
+          uniqueItems.push(item);
+        }
+      } else {
+        // source_path가 없는 경우는 예외적으로 포함
+        uniqueItems.push(item);
+      }
+    }
+
+    showToast(`총 ${uniqueItems.length}개의 파일을 다운로드합니다. 브라우저 다운로드를 확인해주세요.`, 'success');
+
+    setIsProcessing(true);
+    try {
+      for (const item of uniqueItems) {
+        try {
+          await downloadRequestItemFile(detail.id, item.id);
+          // 브라우저의 다중 다운로드 팝업 차단을 방지하기 위해 짧은 지연
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          if (status === 410) {
+            showToast(`[항목 ${item.sort_order}] 보관 기간 만료로 다운로드 실패`, 'error');
+          } else {
+            showToast(`[항목 ${item.sort_order}] 파일 다운로드 실패`, 'error');
+          }
+        }
+      }
+    } finally {
+      setIsProcessing(false);
+      await loadDetail(); // 혹시 410 만료된 항목 상태 업데이트
+    }
+  };
+
 
 
   const startCorrection = () => {
@@ -491,14 +545,24 @@ export default function RequestDetailPage() {
       {detail.status === 'done' && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-emerald-200 bg-[rgba(242,249,244,0.96)] px-4 py-3 text-sm text-emerald-800">
           <span>✓ 이 요청은 처리 완료되었습니다.</span>
-          <button
-            type="button"
-            onClick={() => setResendModalOpen(true)}
-            disabled={isProcessing}
-            className="app-btn app-btn--primary app-btn--sm"
-          >
-            재전송 요청
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadAll}
+              disabled={isProcessing}
+              className="app-btn app-btn--primary app-btn--sm"
+            >
+              전체 다운로드
+            </button>
+            <button
+              type="button"
+              onClick={() => setResendModalOpen(true)}
+              disabled={isProcessing}
+              className="app-btn app-btn--primary app-btn--sm"
+            >
+              재전송 요청
+            </button>
+          </div>
         </div>
       )}
 

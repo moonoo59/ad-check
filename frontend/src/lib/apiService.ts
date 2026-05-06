@@ -286,31 +286,19 @@ export async function getStatsBySalesManager(from?: string, to?: string): Promis
  * 대용량 파일(수 GB)도 지원하므로 timeout을 0(무제한)으로 설정한다.
  */
 export async function downloadRequestItemFile(requestId: number, itemId: number): Promise<void> {
-  const res = await api.get(`/requests/${requestId}/items/${itemId}/download`, {
-    responseType: 'blob',
-    timeout: 0, // 대용량 파일 다운로드: 타임아웃 무제한
-  });
-  // Content-Disposition 헤더에서 파일명 추출 (없으면 기본명 사용)
-  const disposition = res.headers['content-disposition'] as string | undefined;
-  let fileName = `download.avi`;
-  if (disposition) {
-    // filename*=UTF-8''... 형식 우선, 없으면 filename="..." 형식
-    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
-    const basicMatch = disposition.match(/filename="([^"]+)"/i);
-    if (utf8Match) {
-      fileName = decodeURIComponent(utf8Match[1]);
-    } else if (basicMatch) {
-      fileName = basicMatch[1];
-    }
-  }
-  const url = URL.createObjectURL(res.data as Blob);
+  // 파일 다운로드 가능 여부(410 등)를 미리 확인
+  await api.head(`/requests/${requestId}/items/${itemId}/download`);
+
+  // 확인 성공 시 브라우저 네이티브 다운로드 트리거 (메모리 문제 방지 및 동시 다운로드 지원)
+  // 쿠키 기반 인증이므로 a 태그를 통한 직접 접근이 가능합니다.
+  const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+  const url = `${baseURL}/requests/${requestId}/items/${itemId}/download`;
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName;
+  a.download = ''; // Content-Disposition 헤더에 따름
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 /**

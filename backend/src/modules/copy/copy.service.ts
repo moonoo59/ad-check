@@ -31,6 +31,7 @@ import { env } from '../../config/env';
 import { createLogger } from '../../common/logger';
 import { utcNow, utcToKstDate } from '../../common/datetime';
 import { joinPathWithinRoot, resolvePathWithinRoot } from '../../common/path-guards';
+import { withTimeout } from '../../common/fs-utils';
 
 // 모듈 전용 로거 (파일 복사 흐름 전체에서 사용)
 const log = createLogger('Copy');
@@ -256,11 +257,14 @@ async function copySingleFile(
     // 복사 전 원본 파일 크기 조회 → total_bytes 저장 (진행률 계산 기준)
     let totalBytes: number | null = null;
     try {
-      const srcStat = await fs.stat(sourcePath);
+      // 네트워크 볼륨 stat에 타임아웃 적용 (5초)
+      const srcStat = await withTimeout(fs.stat(sourcePath), 5000, `원본 파일 정보 조회: ${sourcePath}`);
       totalBytes = srcStat.size;
       db.prepare(`UPDATE copy_jobs SET total_bytes = ? WHERE id = ?`).run(totalBytes, jobId);
-    } catch {
-      log.warn(`항목 ${item.item_id}: 원본 파일 크기 조회 실패, 진행률 표시 불가`);
+    } catch (err) {
+      log.warn(`항목 ${item.item_id}: 원본 파일 정보 조회 실패 또는 타임아웃, 진행률 표시 불가`, {
+        error: err instanceof Error ? err.message : String(err)
+      });
     }
 
     // 스트림 기반 파일 복사 (진행률 추적 포함)
@@ -362,8 +366,10 @@ async function copyFileWithProgress(
   totalBytes: number | null,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const readStream = fsSync.createReadStream(srcPath);
-    const writeStream = fsSync.createWriteStream(destPath);
+    // 버퍼 크기를 1MB로 상향하여 네트워크 전송 효율을 높입니다 (기본값은 64KB)
+    const BUFFER_SIZE = 1024 * 1024;
+    const readStream = fsSync.createReadStream(srcPath, { highWaterMark: BUFFER_SIZE });
+    const writeStream = fsSync.createWriteStream(destPath, { highWaterMark: BUFFER_SIZE });
 
     let copiedBytes = 0;
     let lastReportedBytes = 0;

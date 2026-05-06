@@ -380,7 +380,7 @@ export default function RequestNewPage() {
                           })}
                           onInput={(e) => {
                             const input = e.currentTarget;
-                            let val = input.value.replace(/[^0-9]/g, '');
+                            const val = input.value.replace(/[^0-9]/g, '');
                             if (val.length === 8) {
                               const formatted = `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`;
                               setValue(`items.${index}.broadcast_date`, formatted, { shouldValidate: true });

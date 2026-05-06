@@ -125,9 +125,8 @@ export default function LoginPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-b from-[#86624b] to-[var(--app-primary)] shadow-[0_12px_24px_rgba(120,88,68,0.22)]">
               <MonitorPlay size={26} className="text-[#fffdf9]" strokeWidth={1.6} />
             </div>
-            <p className="app-eyebrow">Ad Evidence Workflow</p>
             <h1 className="text-[30px] font-bold tracking-[-0.04em] text-[var(--app-text)]">
-              광고 증빙 요청 시스템
+              AdCheck | 광고 송출 확인 시스템
             </h1>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-[var(--app-text-soft)]">
               요청 등록, 파일 확인, 복사 상태를 관리하는 내부 업무 화면입니다.

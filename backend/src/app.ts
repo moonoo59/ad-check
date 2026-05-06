@@ -120,7 +120,20 @@ if (env.FRONTEND_DIST_PATH) {
   const distPath = env.FRONTEND_DIST_PATH;
 
   // 정적 파일 서빙 (JS, CSS, 이미지 등)
-  app.use(express.static(distPath));
+  // index.html 등 진입점은 브라우저 캐시를 타지 않도록 설정하여
+  // 새 버전 배포 시 즉각 반영되도록 합니다.
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      } else {
+        // 빌드된 JS/CSS 자산은 해시가 포함되므로 길게 캐싱
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    }
+  }));
 
   // SPA fallback: React Router 가 처리해야 하는 경로 → index.html 반환
   // (예: /requests, /requests/new 등)

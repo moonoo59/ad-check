@@ -1,8 +1,8 @@
-# 광고 증빙 요청 시스템 — 실행 방법
+# AdCheck | 광고 송출 확인 시스템 — 실행 방법
 
 ## 앱 실행 (권장 — 운영용)
 
-바탕화면 또는 `/Applications` 의 **광고증빙요청시스템** 아이콘을 더블클릭합니다.
+바탕화면 또는 `/Applications` 의 **AdCheck** 아이콘을 더블클릭합니다.
 
 - Electron 제어센터가 먼저 열립니다.
 - 제어센터에서 **[서버 시작]** 을 누르면 서비스 PC 브라우저가 자동으로 열립니다 → **http://localhost:4000**
@@ -27,7 +27,7 @@ export PUBLIC_BASE_URL=http://adcheck.tech.net
 pnpm create-app
 
 # 바탕화면에 생성된 앱을 Applications 폴더로 이동 (선택)
-mv ~/Desktop/광고증빙요청시스템.app /Applications/
+mv ~/Desktop/AdCheck.app /Applications/
 ```
 
 - 빌드 결과물이 없으면 자동으로 `pnpm build`를 먼저 실행합니다.
@@ -103,7 +103,7 @@ pnpm install
 
 | 실행 방식 | DB 경로 |
 |-----------|---------|
-| 앱 (광고증빙요청시스템.app) | `~/Library/Application Support/AdCheck/data/adcheck.db` |
+| 앱 (AdCheck.app) | `~/Library/Application Support/AdCheck/data/adcheck.db` |
 | 개발 서버 (pnpm dev / start.sh) | `~/Library/Application Support/AdCheck/data/adcheck.db` |
 
 앱과 개발 서버는 **같은 DB를 사용**합니다.

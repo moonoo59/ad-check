@@ -34,6 +34,7 @@ import AuditLogPage            from './pages/AuditLogPage';
 import ChangePasswordPage      from './pages/ChangePasswordPage';
 import ManualPage              from './pages/ManualPage';
 import StatsDashboardPage      from './pages/StatsDashboardPage';
+import ReleaseNotesPage        from './pages/ReleaseNotesPage';
 // import SystemSettingsPage      from './pages/SystemSettingsPage'; // 고도화 시 활성화 예정
 
 /**
@@ -93,6 +94,7 @@ function AppRoutes() {
         <Route path="/requests/new"  element={<RequestNewPage />} />
         <Route path="/requests/:id"  element={<RequestDetailPage />} />
         <Route path="/manual"        element={<ManualPage />} />
+        <Route path="/release-notes" element={<ReleaseNotesPage />} />
         <Route path="/stats"         element={<StatsDashboardPage />} />
 
         {/* 비밀번호 변경은 모든 로그인 사용자 가능 */}

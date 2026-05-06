@@ -74,10 +74,11 @@ export default function GlobalNav() {
         {/* 로고 / 시스템명 */}
         <NavLink
           to="/requests"
-          className="app-nav-logo shrink-0"
+          className="app-nav-logo shrink-0 flex items-center gap-2"
         >
-          <span className="app-nav-logo__eyebrow">Ad Evidence Workflow</span>
-          <span className="app-nav-logo__title">광고 증빙 요청 시스템</span>
+          <div>
+            <span className="app-nav-logo__title">AdCheck | 광고 송출 확인 시스템</span>
+          </div>
         </NavLink>
 
         {/* 메인 네비게이션 */}
@@ -90,6 +91,9 @@ export default function GlobalNav() {
           </NavLink>
           <NavLink to="/manual" className={navClass}>
             매뉴얼
+          </NavLink>
+          <NavLink to="/release-notes" className={navClass}>
+            릴리즈 노트
           </NavLink>
 
           {/* 통계 대시보드 — 모든 로그인 사용자 */}

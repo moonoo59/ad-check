@@ -198,9 +198,6 @@ export function createRequest(dto: CreateRequestDto, requesterId: number): numbe
  */
 export function getRequests(
   filter: RequestListFilter,
-  currentUserRole: string,
-  currentUserId: number,
-  currentUserCanCopy = false,
 ): { requests: RequestRow[]; total: number } {
   const page = Math.max(1, filter.page ?? 1);
   const limit = Math.min(100, Math.max(1, filter.limit ?? 20));
@@ -273,12 +270,8 @@ export function getRequests(
  */
 export function getRequestDetail(
   requestId: number,
-  currentUserRole: string,
-  currentUserId: number,
-  currentUserCanCopy = false,
 ): { request: RequestRow; items: (RequestItemRow & { file_search_results: FileSearchResultRow[]; copy_job: CopyJobRow | null })[] } | null {
   const params: (number | string)[] = [requestId];
-  const accessCondition = '';
 
   const request = db.prepare(`
     SELECT
@@ -719,7 +712,6 @@ export function prepareForResend(
   reason: string,
   userId: number,
   userDisplayName: string,
-  currentUserRole: string,
 ): true | string {
   const request = db.prepare(`
     SELECT id, status, requester_id FROM requests WHERE id = ? AND is_deleted = 0

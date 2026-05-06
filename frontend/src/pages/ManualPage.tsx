@@ -373,7 +373,7 @@ function UserManual({
       />
 
       <div className="mt-8 pt-5 border-t border-gray-100 text-xs text-gray-400">
-        광고 증빙 요청 시스템 — 사용자 매뉴얼
+        AdCheck | 광고 송출 확인 시스템 — 사용자 매뉴얼
       </div>
     </>
   );
@@ -416,7 +416,7 @@ pnpm install`}</CodeBlock>
 pnpm create-app
 
 # Applications 폴더로 이동 (선택)
-mv ~/Desktop/광고증빙요청시스템.app /Applications/`}</CodeBlock>
+mv ~/Desktop/AdCheck.app /Applications/`}</CodeBlock>
       <InfoBox type="tip">
         코드가 업데이트될 때마다 <code>pnpm create-app</code>을 다시 실행해 앱을 재생성하세요.
       </InfoBox>
@@ -426,7 +426,7 @@ mv ~/Desktop/광고증빙요청시스템.app /Applications/`}</CodeBlock>
 
       <SubTitle>시작</SubTitle>
       <p className="text-sm text-gray-700 mb-2">
-        바탕화면 또는 <code>/Applications</code> 의 <strong>광고증빙요청시스템</strong> 아이콘을 더블클릭합니다.
+        바탕화면 또는 <code>/Applications</code> 의 <strong>AdCheck</strong> 아이콘을 더블클릭합니다.
       </p>
       <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1 mb-3">
         <li>Electron 제어센터 창이 먼저 열립니다.</li>
@@ -542,7 +542,7 @@ ls /Volumes/data    # Logger Storage 마운트 확인`}</CodeBlock>
       <Table
         headers={['실행 방식', 'DB 경로']}
         rows={[
-          ['앱 (광고증빙요청시스템.app)', '~/Library/Application Support/AdCheck/data/adcheck.db'],
+          ['앱 (AdCheck.app)', '~/Library/Application Support/AdCheck/data/adcheck.db'],
           ['개발 서버 (pnpm dev)', '~/Library/Application Support/AdCheck/data/adcheck.db'],
         ]}
       />
@@ -585,7 +585,7 @@ git pull
 pnpm create-app
 
 # 3. 기존 앱 교체
-mv ~/Desktop/광고증빙요청시스템.app /Applications/
+mv ~/Desktop/AdCheck.app /Applications/
 # 기존 앱을 덮어쓰거나 먼저 삭제 후 이동`}</CodeBlock>
 
       <SubTitle>문제 해결</SubTitle>
@@ -666,7 +666,7 @@ mv ~/Desktop/광고증빙요청시스템.app /Applications/
       />
 
       <div className="mt-8 pt-5 border-t border-gray-100 text-xs text-gray-400">
-        광고 증빙 요청 시스템 — 관리자 매뉴얼
+        AdCheck | 광고 송출 확인 시스템 — 관리자 매뉴얼
       </div>
     </>
   );
@@ -714,7 +714,7 @@ export default function ManualPage() {
       />
 
       <p className="mb-5 text-sm text-[var(--app-text-soft)]">
-        광고 증빙 요청 시스템
+        AdCheck | 광고 송출 확인 시스템
         {isAdmin ? ' — 설치·운용·유지보수·사용 방법 전체 가이드' : ' — 사용 방법 가이드'}
       </p>
 

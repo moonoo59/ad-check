@@ -1,21 +1,12 @@
 /**
- * 파일 탐색 서비스
- *
- * - 전체 요청 탐색: 요청 등록/재탐색 시 사용
- * - 단일 항목 탐색: 오전송 수정 후 해당 항목만 다시 찾을 때 사용
- *
- * 공통 원칙:
- * - 기존 탐색 결과는 대상 항목 단위로 먼저 비운다.
- * - 파일 탐색 실패는 item_status='failed' 로 남긴다.
- * - 전체 요청 탐색은 request.status 를 search_done/failed 로 정리한다.
- * - 단일 항목 탐색은 request.status 를 editing 으로 유지한다.
+ * 파일 탐색 서비스 (비동기 및 타임아웃 처리 적용)
  */
-import fs from 'fs';
 import db from '../../config/database';
 import { findMatchingFiles, ReqItemForMatch } from './file-matcher';
 import { env } from '../../config/env';
 import { createLogger } from '../../common/logger';
 import { utcNow } from '../../common/datetime';
+import { existsAsync } from '../../common/fs-utils';
 
 const log = createLogger('FileSearch');
 
@@ -45,9 +36,10 @@ const insertResult = db.prepare(`
 export async function runFileSearch(requestId: number, userId: number): Promise<void> {
   log.info(`요청 ${requestId} 파일 탐색 시작`);
 
-  if (!fs.existsSync(env.LOGGER_STORAGE_MOUNT)) {
-    log.error('Logger Storage 미마운트', { path: env.LOGGER_STORAGE_MOUNT });
-    markRequestFailed(requestId, 'Logger Storage가 마운트되어 있지 않습니다.');
+  // macOS 보안 다이얼로그 블로킹 방지를 위해 비동기 타임아웃 체크 (3초)
+  if (!(await existsAsync(env.LOGGER_STORAGE_MOUNT, 3000))) {
+    log.error('Logger Storage 접근 불가(타임아웃 또는 미마운트)', { path: env.LOGGER_STORAGE_MOUNT });
+    markRequestFailed(requestId, 'Logger Storage 접근 권한이 없거나 마운트되어 있지 않습니다.');
     return;
   }
 
@@ -62,8 +54,9 @@ export async function runFileSearch(requestId: number, userId: number): Promise<
 
   let successCount = 0;
 
+  // 비동기 순차 처리 (개별 항목 탐색)
   for (const item of items) {
-    const success = searchSingleItem(item);
+    const success = await searchSingleItem(item);
     if (success) {
       successCount++;
     }
@@ -105,15 +98,16 @@ export async function runSingleItemFileSearch(itemId: number, userId: number): P
     return;
   }
 
-  if (!fs.existsSync(env.LOGGER_STORAGE_MOUNT)) {
-    log.error('Logger Storage 미마운트', { path: env.LOGGER_STORAGE_MOUNT, itemId });
-    markSingleItemFailed(item, 'Logger Storage가 마운트되어 있지 않습니다.');
+  // 타임아웃 체크 적용
+  if (!(await existsAsync(env.LOGGER_STORAGE_MOUNT, 3000))) {
+    log.error('Logger Storage 접근 불가', { path: env.LOGGER_STORAGE_MOUNT, itemId });
+    markSingleItemFailed(item, 'Logger Storage 접근 권한이 없거나 마운트되어 있지 않습니다.');
     return;
   }
 
   clearSearchResults([item.id]);
 
-  const success = searchSingleItem(item);
+  const success = await searchSingleItem(item);
   const now = utcNow();
 
   db.prepare(`
@@ -178,7 +172,10 @@ function clearSearchResults(itemIds: number[]): void {
   db.prepare(`DELETE FROM file_search_results WHERE request_item_id IN (${placeholders})`).run(...itemIds);
 }
 
-function searchSingleItem(item: RequestItemWithChannel): boolean {
+/**
+ * 단일 항목 탐색 (비동기 처리)
+ */
+async function searchSingleItem(item: RequestItemWithChannel): Promise<boolean> {
   try {
     const reqItemForMatch: ReqItemForMatch = {
       broadcast_date: item.broadcast_date,
@@ -187,7 +184,8 @@ function searchSingleItem(item: RequestItemWithChannel): boolean {
       monitoring_time: item.monitoring_time,
     };
 
-    const matches = findMatchingFiles(reqItemForMatch, item.storage_folder, env.LOGGER_STORAGE_MOUNT);
+    // 비동기 함수로 변경된 findMatchingFiles 호출
+    const matches = await findMatchingFiles(reqItemForMatch, item.storage_folder, env.LOGGER_STORAGE_MOUNT);
     const now = utcNow();
 
     if (matches.length === 0) {

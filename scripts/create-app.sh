@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-APP_NAME="광고증빙요청시스템"
+APP_NAME="AdCheck"
 APP_PORT="${APP_PORT:-4000}"
 DEFAULT_PUBLIC_BASE_URL="http://adcheck.tech.net"
 PUBLIC_BASE_URL_VALUE="${PUBLIC_BASE_URL:-$DEFAULT_PUBLIC_BASE_URL}"

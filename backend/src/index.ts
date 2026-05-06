@@ -32,7 +32,6 @@ try {
 }
 
 // 로컬 전달 스토리지 경로 확인 및 자동 생성
-// 서버 기동 시 한 번만 실행. 경로가 없으면 생성, 실패 시 종료.
 try {
   if (!fs.existsSync(env.LOCAL_DELIVERY_PATH)) {
     fs.mkdirSync(env.LOCAL_DELIVERY_PATH, { recursive: true });
@@ -42,6 +41,21 @@ try {
   log.error('로컬 전달 디렉토리 생성 실패', { path: env.LOCAL_DELIVERY_PATH, error });
   process.exit(1);
 }
+
+// macOS 보안 권한 선제적 요청 (Pre-flight)
+// 서버 기동 시 네트워크 드라이브를 한 번 읽어서 다이얼로그를 미리 띄웁니다.
+// 이 작업은 비동기로 진행하여 서버 기동 자체를 방해하지 않습니다.
+log.info('네트워크 드라이브 접근 권한 확인 중...', { path: env.LOGGER_STORAGE_MOUNT });
+fs.readdir(env.LOGGER_STORAGE_MOUNT, (err) => {
+  if (err) {
+    log.warn('네트워크 드라이브 접근 확인 실패 (마운트되지 않았거나 권한 거부)', { 
+      path: env.LOGGER_STORAGE_MOUNT, 
+      error: err.message 
+    });
+  } else {
+    log.info('네트워크 드라이브 접근 권한 확인 완료');
+  }
+});
 
 // HTTP 서버 기동
 const server = app.listen(env.PORT, () => {

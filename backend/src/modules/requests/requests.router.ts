@@ -42,7 +42,6 @@ import { executeCopyJobs } from '../copy/copy.service';
 import { sendSuccess, sendError } from '../../common/response';
 import { requireAuth, requireRole, getCurrentUser } from '../../common/auth.middleware';
 import db from '../../config/database';
-import { getChannelById } from '../channels/channels.service';
 import { resolveDeliveryPath } from '../../common/path-guards';
 import { utcNow, kstDateStartToUtc, kstDateEndToUtc } from '../../common/datetime';
 
@@ -128,7 +127,6 @@ router.post('/', requireAuth, (req: Request, res: Response): void => {
  * ad_team은 본인 요청만 조회한다. 단, 파일 전송 권한이 있으면 전송 작업을 위해 전체 요청을 조회할 수 있다.
  */
 router.get('/', requireAuth, (req: Request, res: Response): void => {
-  const user = getCurrentUser(req);
   const {
     status,
     from,
@@ -149,7 +147,7 @@ router.get('/', requireAuth, (req: Request, res: Response): void => {
     sort: sort || undefined,  // SORT_MAP 화이트리스트로 SQL 인젝션 방지 (서비스에서 처리)
   };
 
-  const { requests, total } = getRequests(filter, user.role, user.id);
+  const { requests, total } = getRequests(filter);
   const totalPages = Math.ceil(total / (filter.limit ?? 20));
 
   sendSuccess(res, {
@@ -297,7 +295,6 @@ router.get('/advertisers', requireAuth, (_req: Request, res: Response): void => 
  * 요청 상세 조회 (항목 + 파일 탐색 결과 + 복사 작업 포함)
  */
 router.get('/:id', requireAuth, (req: Request, res: Response): void => {
-  const user = getCurrentUser(req);
   const id = parseInt(req.params.id, 10);
 
   if (isNaN(id)) {
@@ -305,7 +302,7 @@ router.get('/:id', requireAuth, (req: Request, res: Response): void => {
     return;
   }
 
-  const detail = getRequestDetail(id, user.role, user.id);
+  const detail = getRequestDetail(id);
   if (!detail) {
     sendError(res, '요청을 찾을 수 없습니다.', 404, 'NOT_FOUND');
     return;
@@ -638,7 +635,7 @@ router.post(
       return;
     }
 
-    const result = prepareForResend(id, reason.trim(), user.id, user.displayName, user.role);
+    const result = prepareForResend(id, reason.trim(), user.id, user.displayName);
     if (result !== true) {
       const statusCode = result.includes('본인 요청') || result.includes('권한') ? 403 : 400;
       sendError(res, result, statusCode, 'RESEND_FAILED');
@@ -785,7 +782,8 @@ router.get(
       `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
     );
 
-    const stream = fsSync.createReadStream(filePath);
+    // 다운로드 스트림 버퍼 크기 상향 (1MB)
+    const stream = fsSync.createReadStream(filePath, { highWaterMark: 1024 * 1024 });
     stream.on('error', (err) => {
       // 스트리밍 도중 에러 — 이미 헤더를 보냈으므로 JSON 에러 응답 불가, 연결 종료
       console.error(`[Download] 파일 스트림 오류 (itemId=${itemId}):`, err);
