@@ -24,11 +24,21 @@ import path from 'path';
 // ----- 로그 레벨 정의 -----
 type Level = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
+const LEVEL_PRIORITY: Record<Level, number> = {
+  DEBUG: 10,
+  INFO: 20,
+  WARN: 30,
+  ERROR: 40,
+};
+
+const MIN_LEVEL_STR = (process.env.LOG_LEVEL || 'DEBUG').toUpperCase() as Level;
+const MIN_LEVEL_PRIORITY = LEVEL_PRIORITY[MIN_LEVEL_STR] || LEVEL_PRIORITY.DEBUG;
+
 // 터미널 색상 코드
 const COLORS: Record<Level, string> = {
   DEBUG: '\x1b[36m',  // 청록 (cyan)
-  INFO:  '\x1b[32m',  // 녹색 (green)
-  WARN:  '\x1b[33m',  // 노랑 (yellow)
+  INFO: '\x1b[32m',  // 녹색 (green)
+  WARN: '\x1b[33m',  // 노랑 (yellow)
   ERROR: '\x1b[31m',  // 빨강 (red)
 };
 const RESET = '\x1b[0m';
@@ -75,6 +85,14 @@ function writeToFile(line: string): void {
   let stream = fileStreams.get(logFile);
 
   if (!stream) {
+    // 날짜가 바뀌어 새 파일을 열 때, 이전 스트림들을 닫고 정리(FD 누수 방지)
+    for (const [oldFile, oldStream] of fileStreams.entries()) {
+      if (oldFile !== logFile) {
+        oldStream.end();
+        fileStreams.delete(oldFile);
+      }
+    }
+
     stream = fs.createWriteStream(logFile, { flags: 'a' });
     stream.on('error', () => {
       fileStreams.delete(logFile);
@@ -89,6 +107,10 @@ function writeToFile(line: string): void {
  * 로그 한 줄 출력 (콘솔 + 파일)
  */
 function write(level: Level, module: string, message: string, extra?: unknown): void {
+  if (LEVEL_PRIORITY[level] < MIN_LEVEL_PRIORITY) {
+    return; // 설정된 로그 레벨보다 낮으면 무시
+  }
+
   const ts = timestamp();
   // 레벨은 5자리로 고정 (정렬을 위해)
   const levelStr = level.padEnd(5);
@@ -109,8 +131,8 @@ function write(level: Level, module: string, message: string, extra?: unknown): 
 // ----- 로거 인스턴스 타입 -----
 export interface Logger {
   debug: (message: string, extra?: unknown) => void;
-  info:  (message: string, extra?: unknown) => void;
-  warn:  (message: string, extra?: unknown) => void;
+  info: (message: string, extra?: unknown) => void;
+  warn: (message: string, extra?: unknown) => void;
   error: (message: string, extra?: unknown) => void;
 }
 
@@ -122,8 +144,8 @@ export interface Logger {
 export function createLogger(module: string): Logger {
   return {
     debug: (msg, extra) => write('DEBUG', module, msg, extra),
-    info:  (msg, extra) => write('INFO',  module, msg, extra),
-    warn:  (msg, extra) => write('WARN',  module, msg, extra),
+    info: (msg, extra) => write('INFO', module, msg, extra),
+    warn: (msg, extra) => write('WARN', module, msg, extra),
     error: (msg, extra) => write('ERROR', module, msg, extra),
   };
 }
@@ -134,6 +156,9 @@ export function createLogger(module: string): Logger {
  */
 export const morganStream = {
   write: (message: string) => {
+    // morgan HTTP 로그는 INFO 레벨로 취급
+    if (LEVEL_PRIORITY['INFO'] < MIN_LEVEL_PRIORITY) return;
+
     const line = `[${timestamp()}] [INFO ] [HTTP  ] ${message.trim()}`;
     console.log(`${COLORS.INFO}${line}${RESET}`);
     try {
@@ -141,3 +166,32 @@ export const morganStream = {
     } catch { /* 무시 */ }
   },
 };
+
+/**
+ * 오래된 로그 파일 자동 정리 (기본 30일)
+ */
+export function cleanupOldFileLogs(daysToKeep = 30): void {
+  try {
+    const files = fs.readdirSync(LOG_DIR);
+    const now = Date.now();
+    const maxAgeMs = daysToKeep * 24 * 60 * 60 * 1000;
+    let deletedCount = 0;
+
+    for (const file of files) {
+      if (!file.endsWith('.log')) continue;
+      const filePath = path.join(LOG_DIR, file);
+      const stats = fs.statSync(filePath);
+
+      if (now - stats.mtimeMs > maxAgeMs) {
+        fs.unlinkSync(filePath);
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount > 0) {
+      write('INFO', 'Logger', `오래된 시스템 로그 파일 ${deletedCount}개 삭제 완료 (${daysToKeep}일 경과)`);
+    }
+  } catch (err: any) {
+    write('ERROR', 'Logger', '시스템 로그 파일 정리 중 오류 발생', { error: err.message });
+  }
+}

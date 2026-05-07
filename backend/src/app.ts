@@ -44,6 +44,7 @@ app.use(requestIdMiddleware);
 // 형식: :method :url :status :response-time ms - :res[content-length]
 app.use(morgan(':method :url :status :response-time ms - :res[content-length] [:date[iso]]', {
   stream: morganStream,
+  skip: (req) => req.originalUrl === '/api/health' || req.path === '/api/health',
 }));
 
 // CORS 설정 - 별도 Vite 개발 서버를 사용할 때 필요

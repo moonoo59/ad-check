@@ -17,7 +17,8 @@ import fs from 'fs';
 import app from './app';
 import { env } from './config/env';
 import db from './config/database';
-import { createLogger } from './common/logger';
+import { createLogger, cleanupOldFileLogs } from './common/logger';
+import { cleanupOldAuditLogs } from './modules/audit/audit.service';
 import { cleanupExpiredDeliveries } from './modules/files/delivery-cleanup.service';
 
 const log = createLogger('Server');
@@ -73,13 +74,23 @@ const server = app.listen(env.PORT, () => {
   cleanupExpiredDeliveries().catch((err) => {
     log.error('초기 전달 스토리지 정리 실패', { error: err });
   });
+  
+  // 오래된 로그 기동 시 즉시 정리
+  cleanupOldFileLogs(30);
+  cleanupOldAuditLogs(365);
 
-  // 이후 1시간마다 정기 정리
+  // 이후 1시간마다 정기 정리 (전달 스토리지)
   setInterval(() => {
     cleanupExpiredDeliveries().catch((err) => {
       log.error('정기 전달 스토리지 정리 실패', { error: err });
     });
   }, 60 * 60 * 1000); // 1시간 (ms)
+
+  // 이후 24시간마다 정기 정리 (로그)
+  setInterval(() => {
+    cleanupOldFileLogs(30);
+    cleanupOldAuditLogs(365);
+  }, 24 * 60 * 60 * 1000); // 24시간 (ms)
 });
 
 /**
